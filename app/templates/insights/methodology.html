@@ -118,6 +118,39 @@
                 </div>
             </div>
 
+            <details class="tech-block">
+                <summary>
+                    <span class="tech-marker">⚙</span>
+                    <strong>Kiến trúc kỹ thuật (cho audience IT / kiểm toán)</strong>
+                    <span class="tech-hint">— mở rộng để xem thuật toán</span>
+                </summary>
+                <div class="methodology-body" style="margin-top: 14px;">
+                    <p><strong>Đưa BTP về NVL gốc.</strong> Bottom-up traversal: leaf level (NVL gốc, mã có trong dữ liệu hải quan) giữ nguyên ở Level 1.
+                        BTP tự sản xuất gán level theo độ sâu trong cây quan hệ. Topological sort theo Kahn's algorithm.
+                        Công thức flat_norm:</p>
+                    <div class="formula">
+                        <code>flat_norm[NVL][TP] = direct_norm[NVL][TP] + Σ direct_norm[BTP][TP] × flat_norm[NVL][BTP]</code>
+                    </div>
+                    <p><strong>Phát hiện vòng tròn sản xuất.</strong> Tarjan's strongly-connected components phát hiện các nhóm liên thông mạnh.
+                        Nhóm 1-node với self-edge = rework; nhóm ≥2 node = chuyển đổi phiên bản.</p>
+                    <p><strong>Giải vòng tròn.</strong> Hệ phương trình tuyến tính trên mỗi SCC:</p>
+                    <div class="formula">
+                        <code>(I − C) · X = K</code>
+                    </div>
+                    <p>C: ma trận norm cross-edge giữa các node trong cycle; K: vector norm sang NVL gốc ngoài cycle; X: flatten norm cuối.
+                        Giải bằng <code>numpy.linalg.solve</code>. Điều kiện hội tụ: ρ(C) &lt; 1 (đã verify trên toàn bộ 20 SCC của dữ liệu thực).</p>
+                    <p><strong>Dual-source FIFO.</strong> Mã có cả nguồn HQ và nội bộ: phân bổ xuất kho theo trình tự thời gian (first-in-first-out)
+                        từ stack hợp nhất 2 nguồn. Phần đi qua biên giới HQ ghi vào Mẫu 15; phần nội bộ tách riêng.</p>
+                    <p><strong>Truy vết NVL.</strong> Bất biến cuối:</p>
+                    <div class="formula">
+                        <code>xuất_SX = vào_TP_xuất_khẩu + khoá_TP_tồn + khoá_BTP_tồn + còn_lại</code>
+                    </div>
+                    <p>Mỗi đơn vị NVL phải được phân bổ về 1 trong 4 đích. Tổng "còn lại" trên dữ liệu đại diện = 0,14% (6.619 / 4.757.304 đơn vị).</p>
+                    <p><strong>Stack & I/O.</strong> Pipeline Python 3.12 + pandas + openpyxl, đọc Excel/CSV trực tiếp,
+                        không phụ thuộc database trung gian. Toàn bộ cấu hình lưu YAML versioned, có thể replay mọi lần chạy từ git tag.</p>
+                </div>
+            </details>
+
             <div class="panel">
                 <div class="panel-head"><h3>7. Hồ sơ giải trình</h3></div>
                 <div class="panel-body methodology-body">

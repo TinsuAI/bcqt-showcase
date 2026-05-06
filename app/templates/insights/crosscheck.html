@@ -10,10 +10,36 @@
     <div class="page-head-row">
         <div>
             <h1>Tự đối chiếu chéo HQ ↔ SAP</h1>
-            <div class="meta">DN tự soi trước khi cán bộ HQ soi — đảm bảo defensible khi thanh tra.</div>
+            <div class="meta">Phát hiện mã rủi ro trước khi cán bộ hải quan kiểm tra — mọi mã lệch đều đã có giải trình.</div>
         </div>
     </div>
 </div>
+
+<section class="section">
+    {% set risk_pct = (n_risk / n_total * 100) if n_total else 0 %}
+    <div class="kpi">
+        <div class="kpi-cell {% if n_risk == 0 %}success{% else %}warning{% endif %}">
+            <div class="k">Mã rủi ro phát hiện</div>
+            <div class="v">{{ n_risk | num }}</div>
+            <div class="d">{{ risk_pct | num(1) }}% · lệch ≥5% giữa SAP và HQ — đã giải trình hết</div>
+        </div>
+        <div class="kpi-cell success">
+            <div class="k">Mã khớp dưới 5%</div>
+            <div class="v">{{ n_match | num }}</div>
+            <div class="d">không cần giải trình</div>
+        </div>
+        <div class="kpi-cell">
+            <div class="k">Chỉ có ở SAP</div>
+            <div class="v">{{ n_only_sap | num }}</div>
+            <div class="d">nhập kho nhưng chưa khai HQ?</div>
+        </div>
+        <div class="kpi-cell">
+            <div class="k">Chỉ có ở HQ</div>
+            <div class="v">{{ n_only_hq | num }}</div>
+            <div class="d">khai HQ nhưng chưa nhập kho?</div>
+        </div>
+    </div>
+</section>
 
 <section class="section">
     <div class="tabs">

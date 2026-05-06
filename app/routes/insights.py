@@ -219,6 +219,84 @@ def material_profile(slug: str, code: str, request: Request, db: Session = Depen
     elif master and master.category == "CCDC":
         role = "CCDC"
 
+    # Auto-gen "Vì sao" — diễn giải tại sao mã được/không được đưa vào mẫu nào
+    explanations: list[dict] = []
+    if master:
+        if master.has_conflict:
+            explanations.append({
+                "tone": "warning",
+                "title": "Có mâu thuẫn phân loại nội bộ",
+                "body": (
+                    f"Tài khoản kế toán ({master.gl_account or '—'}) và loại vật tư SAP "
+                    f"({master.material_type or '—'}) đang đề xuất phân loại khác nhau. "
+                    "Pipeline áp ưu tiên hành vi MB51, kết quả cuối: "
+                    f"{master.category or '—'}. Đã ghi vào nhật ký xử lý."
+                ),
+            })
+        if master.category == "NVL":
+            explanations.append({
+                "tone": "info",
+                "title": "Đưa vào Mẫu 15 — nguyên vật liệu",
+                "body": (
+                    f"Nguyên liệu (TK {master.gl_account or '—'}, loại SAP {master.material_type or '—'}). "
+                    "Mẫu 15 ghi nhận nhập-xuất-tồn theo TT 39/2018 Phụ lục V."
+                ),
+            })
+        elif master.category == "TP":
+            if m15a:
+                explanations.append({
+                    "tone": "success",
+                    "title": "Đưa vào Mẫu 15a + Mẫu 16 — thành phẩm xuất khẩu",
+                    "body": (
+                        "Có nhập kho thành phẩm và có xuất khẩu E42. "
+                        "Mẫu 15a ghi nhập-xuất-tồn TP, Mẫu 16 ghi định mức truy ngược về NVL gốc."
+                    ),
+                })
+            else:
+                explanations.append({
+                    "tone": "neutral",
+                    "title": "Là thành phẩm nhưng chưa xuất khẩu trong kỳ",
+                    "body": "Không xuất hiện trên Mẫu 15a (kỳ này không có tờ khai E42 chứa mã).",
+                })
+        elif master.category in ("BTP_SX", "BTP_NM"):
+            explanations.append({
+                "tone": "info",
+                "title": "Bán thành phẩm — không trực tiếp lên Mẫu 15/15a/16",
+                "body": (
+                    "Theo TT 39/2018 PL V ghi chú, BTP tự sản xuất không thể hiện chi tiết trên Mẫu 15. "
+                    "Pipeline đưa BTP về NVL gốc cấu thành rồi mới ghi vào Mẫu 16. "
+                    "Sheet BTP_BALANCE và BOM_Flat trong hồ sơ giải trình lưu chi tiết để cán bộ HQ kiểm tra."
+                ),
+            })
+        elif master.category == "CCDC":
+            explanations.append({
+                "tone": "neutral",
+                "title": "CCDC — không đưa vào Mẫu 15",
+                "body": (
+                    "Công cụ dụng cụ sử dụng nhiều lần, không cấu thành sản phẩm. "
+                    "Theo CV 3304/TCHQ-GSQL, CCDC nhập E13 không thuộc phạm vi BCQT."
+                ),
+            })
+    elif mb51_total > 0:
+        explanations.append({
+            "tone": "warning",
+            "title": "Có hành vi sản xuất nhưng không có Material Master",
+            "body": (
+                "Mã xuất hiện trong MB51 nhưng không có trong file Material Master MB5B. "
+                "Pipeline cờ riêng để doanh nghiệp xác nhận cách phân loại trước khi đưa vào mẫu."
+            ),
+        })
+    if trace and trace.con_lai > 0.5:
+        pct = trace.pct_giai_trinh
+        explanations.append({
+            "tone": "warning",
+            "title": f"Truy vết chỉ đạt {pct:.1f}% — còn {trace.con_lai:,.0f} đv chưa giải trình",
+            "body": (
+                "Phần còn lại có thể là hao hụt cắt dập, phế liệu chưa khai, hoặc sai mapping. "
+                "Cần tài liệu kỹ thuật bổ sung khi cán bộ HQ yêu cầu."
+            ),
+        })
+
     return request.app.state.render(
         request, "insights/material.html",
         company=c, code=code, role=role, master=master,
@@ -226,6 +304,7 @@ def material_profile(slug: str, code: str, request: Request, db: Session = Depen
         bcct_records=bcct_records, bcct_total=bcct_total,
         m15=m15, m15a=m15a, m16_as_tp=m16_as_tp, m16_as_nvl=m16_as_nvl,
         trace=trace, has_bom_graph=has_bom_graph,
+        explanations=explanations,
     )
 
 
@@ -379,6 +458,37 @@ def crosscheck(slug: str, request: Request, db: Session = Depends(get_db),
         .group_by(CrosscheckRow.match_status)
     ).all())
 
+    # Mã rủi ro: lệch ≥5% giữa SAP và HQ
+    n_risk = db.scalar(
+        select(func.count()).select_from(CrosscheckRow).where(
+            CrosscheckRow.company_id == c.id,
+            CrosscheckRow.sheet == sheet,
+            func.abs(CrosscheckRow.qty_diff_pct) >= 5,
+        )
+    ) or 0
+    n_match = db.scalar(
+        select(func.count()).select_from(CrosscheckRow).where(
+            CrosscheckRow.company_id == c.id,
+            CrosscheckRow.sheet == sheet,
+            CrosscheckRow.sap_qty != 0, CrosscheckRow.cus_qty != 0,
+            func.abs(CrosscheckRow.qty_diff_pct) < 5,
+        )
+    ) or 0
+    n_only_sap = db.scalar(
+        select(func.count()).select_from(CrosscheckRow).where(
+            CrosscheckRow.company_id == c.id,
+            CrosscheckRow.sheet == sheet,
+            CrosscheckRow.cus_qty == 0, CrosscheckRow.sap_qty != 0,
+        )
+    ) or 0
+    n_only_hq = db.scalar(
+        select(func.count()).select_from(CrosscheckRow).where(
+            CrosscheckRow.company_id == c.id,
+            CrosscheckRow.sheet == sheet,
+            CrosscheckRow.sap_qty == 0, CrosscheckRow.cus_qty != 0,
+        )
+    ) or 0
+
     # Filter rows
     stmt = select(CrosscheckRow).where(
         CrosscheckRow.company_id == c.id, CrosscheckRow.sheet == sheet
@@ -409,6 +519,7 @@ def crosscheck(slug: str, request: Request, db: Session = Depends(get_db),
         sap_qty_sum=sap_qty_sum, cus_qty_sum=cus_qty_sum,
         sap_value_sum=float(sap_value_sum or 0), cus_value_sum=float(cus_value_sum or 0),
         status_counts=status_counts,
+        n_risk=n_risk, n_match=n_match, n_only_sap=n_only_sap, n_only_hq=n_only_hq,
         rows=rows, filter=filter or "all", filter_label=filter_label,
     )
 

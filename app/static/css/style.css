@@ -688,6 +688,21 @@ table.data tr.row-link { cursor: pointer; }
     .lc-row { grid-template-columns: 1fr; }
 }
 
+/* ===== Explain card (material profile "Vì sao") ===== */
+.explain-card {
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: var(--radius-md);
+    padding: 11px 14px;
+    background: var(--card);
+}
+.explain-card.explain-success { border-left-color: var(--success); background: rgba(34, 197, 94, 0.05); }
+.explain-card.explain-warning { border-left-color: var(--warning); background: rgba(245, 158, 11, 0.05); }
+.explain-card.explain-info { border-left-color: var(--info); background: rgba(96, 165, 250, 0.05); }
+.explain-card.explain-neutral { border-left-color: var(--border-strong); }
+.explain-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.explain-body { font-size: 12.5px; color: var(--foreground-soft); line-height: 1.5; }
+
 /* ===== Methodology page ===== */
 .methodology-body { font-size: 13.5px; line-height: 1.65; color: var(--foreground-soft); }
 .methodology-body p { margin-bottom: 10px; }
@@ -731,6 +746,41 @@ table.data tr.row-link { cursor: pointer; }
 }
 .formula code { background: transparent; padding: 0; font-size: inherit; }
 
+.tech-block {
+    background: var(--card-muted);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--foreground-muted);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+}
+.tech-block summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--foreground-soft);
+    display: flex; align-items: center; gap: 10px;
+    list-style: none;
+    user-select: none;
+}
+.tech-block summary::-webkit-details-marker { display: none; }
+.tech-block summary::after {
+    content: "▸";
+    margin-left: auto;
+    color: var(--foreground-muted);
+    transition: transform 200ms;
+}
+.tech-block[open] summary::after { transform: rotate(90deg); }
+.tech-block summary strong { color: var(--foreground); font-weight: 600; }
+.tech-marker {
+    width: 24px; height: 24px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--surface-subtle);
+    color: var(--foreground-muted);
+    font-size: 13px;
+}
+.tech-hint { font-size: 11.5px; color: var(--foreground-muted); }
+@media (max-width: 600px) { .tech-hint { display: none; } }
+
 /* ===== Legal reference tooltip ===== */
 .legal-ref {
     position: relative;
@@ -752,7 +802,7 @@ table.data tr.row-link { cursor: pointer; }
 .legal-popover {
     position: absolute;
     bottom: calc(100% + 8px); left: 0;
-    width: 380px; max-width: 80vw;
+    width: 420px; max-width: 86vw;
     z-index: 100;
     background: var(--card-strong);
     border: 1px solid var(--border-strong);
@@ -767,24 +817,45 @@ table.data tr.row-link { cursor: pointer; }
     white-space: normal;
     cursor: text;
 }
-.legal-popover strong {
+.legal-head { display: block; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.legal-head strong {
     display: block;
     font-size: 13px; font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
-.legal-popover .legal-doc {
+.legal-doc {
     display: block;
     font-family: "IBM Plex Mono", monospace;
     font-size: 11px;
     color: var(--foreground-muted);
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
 }
-.legal-popover .legal-excerpt {
+.legal-section {
+    display: block;
+    margin-bottom: 10px;
+}
+.legal-section:last-of-type { margin-bottom: 0; }
+.legal-section-label {
+    display: block;
+    font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--foreground-muted);
+    margin-bottom: 4px;
+}
+.legal-section-app {
+    color: var(--primary);
+}
+.legal-text {
     display: block;
     color: var(--foreground-soft);
+}
+.legal-foot {
+    display: block;
+    font-size: 10.5px;
+    color: var(--foreground-muted);
     font-style: italic;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
 }
 .legal-ref:hover .legal-popover,
 .legal-ref:focus .legal-popover,

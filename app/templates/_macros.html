@@ -6,9 +6,21 @@
 <span class="legal-ref" tabindex="0">
   <span class="legal-ref-label mono">{{ label or code }}</span>
   <span class="legal-popover" role="tooltip">
-    <strong>{{ entry.title }}</strong>
-    <span class="legal-doc">{{ entry.doc }} · {{ entry.issuer }}</span>
-    <span class="legal-excerpt">{{ entry.excerpt }}</span>
+    <span class="legal-head">
+      <strong>{{ entry.title }}</strong>
+      <span class="legal-doc">{{ entry.doc }} · {{ entry.issuer }}</span>
+    </span>
+    <span class="legal-section">
+      <span class="legal-section-label">Tóm tắt nội dung</span>
+      <span class="legal-text">{{ entry.summary }}</span>
+    </span>
+    {% if entry.interpretation %}
+    <span class="legal-section">
+      <span class="legal-section-label legal-section-app">Áp dụng theo Trọng Tín</span>
+      <span class="legal-text">{{ entry.interpretation }}</span>
+    </span>
+    {% endif %}
+    <span class="legal-foot">Tóm tắt — không phải trích nguyên văn. Vui lòng xem văn bản gốc để đối chiếu chính xác.</span>
   </span>
 </span>
 {% else %}

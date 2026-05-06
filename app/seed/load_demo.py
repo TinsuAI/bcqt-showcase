@@ -184,7 +184,8 @@ def seed_materials(db, company: Company, limit: int = 5000) -> None:
     df = pd.read_csv(f, dtype=str).head(limit)
     rows = []
     for _, r in df.iterrows():
-        cat = r.get("category") or r.get("classification")
+        cat = r.get("material_category") or r.get("category") or r.get("classification")
+        conflict_raw = r.get("classification_conflict") or r.get("has_conflict")
         rows.append(
             Material(
                 company_id=company.id,
@@ -194,7 +195,7 @@ def seed_materials(db, company: Company, limit: int = 5000) -> None:
                 material_type=_safe_str(r.get("material_type")),
                 gl_account=_safe_str(r.get("gl_account") or r.get("valuation_class")),
                 category=_safe_str(cat),
-                has_conflict=bool(r.get("has_conflict") in ("True", "true", "1", True)),
+                has_conflict=str(conflict_raw).lower() in ("true", "1"),
             )
         )
     db.add_all(rows)
