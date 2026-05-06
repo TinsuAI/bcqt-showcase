@@ -118,7 +118,7 @@
             <tbody>
                 {% for n in nodes %}
                 <tr>
-                    <td class="mono">{{ n.material }}</td>
+                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ n.material }}">{{ n.material }}</a></td>
                     <td class="small">{{ n.description or "" }}</td>
                     <td><span class="badge neutral">L{{ n.level }}</span></td>
                     <td>

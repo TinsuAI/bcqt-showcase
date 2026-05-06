@@ -43,7 +43,7 @@
             <tbody>
                 {% for r in rows %}
                 <tr>
-                    <td class="mono">{{ r.material }}</td>
+                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ r.material }}">{{ r.material }}</a></td>
                     <td class="small">{{ r.description or "" }}</td>
                     <td>{{ r.uom or "" }}</td>
                     <td class="num">{{ r.ton_dau_ky | num }}</td>
@@ -65,7 +65,7 @@
             <tbody>
                 {% for r in rows %}
                 <tr>
-                    <td class="mono">{{ r.material }}</td>
+                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ r.material }}">{{ r.material }}</a></td>
                     <td class="small">{{ r.description or "" }}</td>
                     <td>{{ r.uom or "" }}</td>
                     <td class="num">{{ r.ton_dau_ky | num }}</td>
@@ -78,19 +78,19 @@
             </tbody>
         </table>
         {% else %}
-        <table class="data">
+        <table class="data sortable">
             <thead><tr>
-                <th>Mã TP XK</th><th>Tên TP</th><th>UOM TP</th>
-                <th>Mã NVL</th><th>Tên NVL</th><th>UOM NVL</th>
-                <th class="num">Định mức</th><th>Ghi chú</th>
+                <th data-sort="text">Mã TP XK</th><th>Tên TP</th><th>UOM TP</th>
+                <th data-sort="text">Mã NVL</th><th>Tên NVL</th><th>UOM NVL</th>
+                <th class="num" data-sort="num">Định mức</th><th>Ghi chú</th>
             </tr></thead>
             <tbody>
                 {% for r in rows %}
                 <tr>
-                    <td class="mono">{{ r.tp_code }}</td>
+                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ r.tp_code }}">{{ r.tp_code }}</a></td>
                     <td class="small">{{ r.tp_name or "" }}</td>
                     <td>{{ r.tp_uom or "" }}</td>
-                    <td class="mono">{{ r.nvl_code }}</td>
+                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ r.nvl_code }}">{{ r.nvl_code }}</a></td>
                     <td class="small">{{ r.nvl_name or "" }}</td>
                     <td>{{ r.nvl_uom or "" }}</td>
                     <td class="num">{{ r.norm | num(6) }}</td>

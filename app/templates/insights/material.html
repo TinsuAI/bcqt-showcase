@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Hồ sơ mã {{ code }} — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Hồ sơ mã {{ code }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>
+                <span class="mono" style="background: var(--surface-subtle); padding: 2px 10px; border-radius: 6px;">{{ code }}</span>
+                <span class="muted small" style="font-weight: 400; margin-left: 8px;">— {{ role }}</span>
+            </h1>
+            <div class="meta">{{ master.description if master else "(chưa có trong master data)" }}</div>
+        </div>
+        <div class="page-actions">
+            {% if trace %}<a class="btn btn-sm" href="/c/{{ company.slug }}/trace?q={{ code }}">Truy vết</a>{% endif %}
+            {% if has_bom_graph %}<a class="btn btn-sm" href="/c/{{ company.slug }}/bom?tp={{ code }}">Đồ thị định mức</a>{% endif %}
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="grid-12">
+        <div class="stack">
+            {# ─── Hồ sơ kế toán ─── #}
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Hồ sơ kế toán</h3>
+                    {% if master and master.has_conflict %}
+                    <span class="badge warning">Có mâu thuẫn phân loại</span>
+                    {% endif %}
+                </div>
+                <div class="panel-body dense">
+                    {% if master %}
+                    <div class="row-line"><span class="key">Mã nội bộ</span><span class="val mono">{{ master.code }}</span></div>
+                    <div class="row-line"><span class="key">Tên</span><span class="val small">{{ master.description or "—" }}</span></div>
+                    <div class="row-line"><span class="key">ĐVT</span><span class="val mono">{{ master.uom or "—" }}</span></div>
+                    <div class="row-line"><span class="key">TK kế toán</span><span class="val mono">{{ master.gl_account or "—" }}</span></div>
+                    <div class="row-line"><span class="key">Material Type SAP</span><span class="val"><span class="badge neutral">{{ master.material_type or "—" }}</span></span></div>
+                    <div class="row-line"><span class="key">Phân loại</span><span class="val">
+                        {% if master.category == "TP" %}<span class="badge success">Thành phẩm</span>
+                        {% elif master.category == "NVL" %}<span class="badge info">NVL</span>
+                        {% elif master.category in ("BTP_SX", "BTP_NM") %}<span class="badge warning">{{ master.category }}</span>
+                        {% elif master.category == "CCDC" %}<span class="badge neutral">CCDC</span>
+                        {% else %}<span class="muted small">{{ master.category or "—" }}</span>{% endif %}
+                    </span></div>
+                    {% else %}
+                    <div class="no-data tiny">Mã không có trong Material Master.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# ─── Lưu chuyển kho (MB51) ─── #}
+            {% if mb51_total > 0 %}
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Lưu chuyển kho (SAP MB51)</h3>
+                    <span class="meta">{{ mb51_total | num }} bản ghi</span>
+                </div>
+                <div class="panel-body">
+                    <div class="tiny muted" style="text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 8px;">Tổng theo loại chuyển động</div>
+                    <div class="table-wrap">
+                        <table class="data">
+                            <thead><tr><th>MvT</th><th class="num">Số bản ghi</th><th class="num">Tổng SL</th></tr></thead>
+                            <tbody>
+                                {% for mv, n, qty in mb51_summary %}
+                                <tr>
+                                    <td><span class="badge neutral mono">{{ mv }}</span></td>
+                                    <td class="num">{{ n | num }}</td>
+                                    <td class="num">{{ qty | num }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="tiny muted" style="text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin: 14px 0 8px;">10 bản ghi gần nhất</div>
+                    <div class="table-wrap">
+                        <table class="data">
+                            <thead><tr>
+                                <th>Ngày</th><th>MvT</th><th class="num">SL</th><th>ĐVT</th>
+                                <th>PO</th><th>Lệnh SX</th><th>TK</th>
+                            </tr></thead>
+                            <tbody>
+                                {% for r in mb51_sample %}
+                                <tr>
+                                    <td class="mono">{{ r.posting_date or "" }}</td>
+                                    <td><span class="badge neutral">{{ r.movement_type }}</span></td>
+                                    <td class="num">{{ r.quantity | num }}</td>
+                                    <td>{{ r.uom or "" }}</td>
+                                    <td class="mono small">{{ r.purchase_order or "" }}</td>
+                                    <td class="mono small">{{ r.production_order or "" }}</td>
+                                    <td class="mono small">{{ r.gl_account or "" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ─── Khai báo HQ (BCCT) ─── #}
+            {% if bcct_total > 0 %}
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Khai báo hải quan (BCCT)</h3>
+                    <span class="meta">{{ bcct_total | num }} dòng — VNACCS</span>
+                </div>
+                <div class="panel-body">
+                    <div class="table-wrap">
+                        <table class="data">
+                            <thead><tr>
+                                <th>Ngày</th><th>Số TK</th><th>Loại hình</th>
+                                <th>Hướng</th><th class="num">SL</th><th>ĐVT</th><th class="num">Trị giá (VND)</th>
+                            </tr></thead>
+                            <tbody>
+                                {% for r in bcct_records %}
+                                <tr>
+                                    <td class="mono">{{ r.declaration_date or "" }}</td>
+                                    <td class="mono">{{ r.declaration_no or "" }}</td>
+                                    <td><span class="badge {% if r.direction == 'import' %}info{% elif r.direction == 'export' %}success{% else %}neutral{% endif %}">{{ r.customs_type or "—" }}</span></td>
+                                    <td class="small">{{ r.direction | vi_direction }}</td>
+                                    <td class="num">{{ r.quantity | num }}</td>
+                                    <td>{{ r.uom or "" }}</td>
+                                    <td class="num">{{ r.amount_usd | num(0) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ─── Mẫu nộp HQ ─── #}
+            {% if m15 or m15a or m16_as_tp or m16_as_nvl %}
+            <div class="panel">
+                <div class="panel-head"><h3>Mẫu nộp Hải quan (TT 39/2018)</h3></div>
+                <div class="panel-body">
+                    {% if m15 %}
+                    <div class="tiny muted" style="text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 8px;">Mẫu 15 — NVL nhập-xuất-tồn</div>
+                    <div class="kpi" style="grid-template-columns: repeat(5, 1fr);">
+                        <div class="kpi-cell"><div class="k">Tồn đầu kỳ</div><div class="v" style="font-size: 16px;">{{ m15.ton_dau_ky | num }}</div></div>
+                        <div class="kpi-cell"><div class="k">Nhập trong kỳ</div><div class="v" style="font-size: 16px;">{{ m15.nhap_trong_ky | num }}</div></div>
+                        <div class="kpi-cell"><div class="k">Xuất SX</div><div class="v" style="font-size: 16px;">{{ m15.xuat_san_xuat | num }}</div></div>
+                        <div class="kpi-cell"><div class="k">Xuất khác</div><div class="v" style="font-size: 16px;">{{ m15.xuat_khac | num }}</div></div>
+                        <div class="kpi-cell"><div class="k">Tồn cuối kỳ</div><div class="v" style="font-size: 16px;">{{ m15.ton_cuoi_ky | num }}</div></div>
+                    </div>
+                    {% endif %}
+
+                    {% if m15a %}
+                    <div class="tiny muted" style="text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin: 14px 0 8px;">Mẫu 15a — Thành phẩm xuất khẩu</div>
+                    <div class="kpi" style="grid-template-columns: repeat(5, 1fr);">
+                        <div class="kpi-cell"><div class="k">Tồn đầu kỳ</div><div class="v" style="font-size: 16px;">{{ m15a.ton_dau_ky | num }}</div></div>
+                        <div class="kpi-cell"><div class="k">Nhập kho</div><div class="v" style="font-size: 16px;">{{ m15a.nhap_kho | num }}</div></div>
+                        <div class="kpi-cell success"><div class="k">Xuất khẩu</div><div class="v" style="font-size: 16px;">{{ m15a.xuat_khau | num }}</div></div>
+                        <div class="kpi-cell"><div class="k">Xuất khác</div><div class="v" style="font-size: 16px;">{{ m15a.xuat_khac | num }}</div></div>
+                        <div class="kpi-cell"><div class="k">Tồn cuối kỳ</div><div class="v" style="font-size: 16px;">{{ m15a.ton_cuoi_ky | num }}</div></div>
+                    </div>
+                    {% endif %}
+
+                    {% if m16_as_tp %}
+                    <div class="tiny muted" style="text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin: 14px 0 8px;">
+                        Mẫu 16 — Định mức của TP {{ code }} <span class="muted">({{ m16_as_tp | length }} NVL gốc)</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data">
+                            <thead><tr><th>Mã NVL</th><th>Tên NVL</th><th>ĐVT</th><th class="num">Định mức</th><th>Ghi chú</th></tr></thead>
+                            <tbody>
+                                {% for r in m16_as_tp %}
+                                <tr>
+                                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ r.nvl_code }}">{{ r.nvl_code }}</a></td>
+                                    <td class="small">{{ r.nvl_name or "" }}</td>
+                                    <td>{{ r.nvl_uom or "" }}</td>
+                                    <td class="num">{{ r.norm | num(6) }}</td>
+                                    <td class="small muted">{{ r.note or "" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    {% if m16_as_nvl %}
+                    <div class="tiny muted" style="text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin: 14px 0 8px;">
+                        Mẫu 16 — NVL {{ code }} dùng cho TP nào <span class="muted">(top 20 theo định mức)</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data">
+                            <thead><tr><th>Mã TP XK</th><th>Tên TP</th><th>ĐVT</th><th class="num">Định mức</th></tr></thead>
+                            <tbody>
+                                {% for r in m16_as_nvl %}
+                                <tr>
+                                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ r.tp_code }}">{{ r.tp_code }}</a></td>
+                                    <td class="small">{{ r.tp_name or "" }}</td>
+                                    <td>{{ r.tp_uom or "" }}</td>
+                                    <td class="num">{{ r.norm | num(6) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <aside class="stack">
+            {# ─── Truy vết ─── #}
+            {% if trace %}
+            <div class="panel">
+                <div class="panel-head"><h3>Truy vết NVL</h3></div>
+                <div class="panel-body">
+                    <div class="kpi" style="grid-template-columns: 1fr;">
+                        <div class="kpi-cell primary">
+                            <div class="k">Xuất sản xuất</div>
+                            <div class="v">{{ trace.xuat_sx | num(0) }}</div>
+                        </div>
+                        <div class="kpi-cell success">
+                            <div class="k">Đã giải trình</div>
+                            <div class="v">{{ trace.giai_trinh | num(0) }}</div>
+                            <div class="d">{{ trace.pct_giai_trinh | num(2) }}% — vào TP XK / khoá tồn</div>
+                        </div>
+                        {% if trace.con_lai > 0.5 %}
+                        <div class="kpi-cell warning">
+                            <div class="k">Còn lại</div>
+                            <div class="v">{{ trace.con_lai | num(0) }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="row" style="margin-top: 10px;">
+                        <a class="btn btn-sm" href="/c/{{ company.slug }}/trace?q={{ code }}">Xem vòng đời chi tiết →</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ─── Đồ thị định mức ─── #}
+            {% if has_bom_graph %}
+            <div class="panel">
+                <div class="panel-head"><h3>Đồ thị định mức</h3></div>
+                <div class="panel-body">
+                    <p class="small muted">Mã này có cây định mức truy ngược về NVL gốc đã được dựng sẵn.</p>
+                    <div class="row" style="margin-top: 10px;">
+                        <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/bom?tp={{ code }}">Xem đồ thị →</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ─── Liên kết nhanh ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>Liên kết nhanh</h3></div>
+                <div class="panel-body dense">
+                    {% if m15 %}<a class="row-line" href="/c/{{ company.slug }}/phase/5?form=m15&q={{ code }}"><span class="badge primary">M15</span><span class="val small" style="flex:1;">Trong Mẫu 15</span><span class="tiny muted">→</span></a>{% endif %}
+                    {% if m15a %}<a class="row-line" href="/c/{{ company.slug }}/phase/5?form=m15a&q={{ code }}"><span class="badge primary">M15a</span><span class="val small" style="flex:1;">Trong Mẫu 15a</span><span class="tiny muted">→</span></a>{% endif %}
+                    {% if m16_as_tp or m16_as_nvl %}<a class="row-line" href="/c/{{ company.slug }}/phase/5?form=m16&q={{ code }}"><span class="badge primary">M16</span><span class="val small" style="flex:1;">Trong Mẫu 16</span><span class="tiny muted">→</span></a>{% endif %}
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

@@ -47,6 +47,7 @@
         <div class="rail-section">
             <div class="rail-section-label">Nghiệp vụ</div>
             <a href="{{ base }}/risks" {% if "/risks" in p %}class="active"{% endif %}>Phát hiện rủi ro</a>
+            <a href="{{ base }}/crosscheck" {% if "/crosscheck" in p %}class="active"{% endif %}>Tự đối chiếu chéo</a>
             <a href="{{ base }}/trace" {% if "/trace" in p %}class="active"{% endif %}>Truy vết NVL</a>
             <a href="{{ base }}/bom" {% if "/bom" in p %}class="active"{% endif %}>Đồ thị định mức</a>
             <a href="{{ base }}/log" {% if "/log" in p %}class="active"{% endif %}>Nhật ký xử lý</a>
@@ -54,6 +55,7 @@
 
         <div class="rail-section">
             <div class="rail-section-label">Hệ thống</div>
+            <a href="{{ base }}/methodology" {% if "/methodology" in p %}class="active"{% endif %}>Phương pháp luận</a>
             <a href="{{ base }}/runs" {% if "/runs" in p %}class="active"{% endif %}>Lịch sử chạy</a>
             <a href="{{ base }}/rules" {% if "/rules" in p %}class="active"{% endif %}>Quy tắc xử lý</a>
         </div>

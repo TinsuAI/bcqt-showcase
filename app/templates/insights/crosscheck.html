@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Tự đối chiếu chéo — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Tự đối chiếu chéo</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Tự đối chiếu chéo HQ ↔ SAP</h1>
+            <div class="meta">DN tự soi trước khi cán bộ HQ soi — đảm bảo defensible khi thanh tra.</div>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="tabs">
+        <a class="tab {% if sheet == 'all_imports' %}active{% endif %}" href="?sheet=all_imports">Tổng nhập khẩu</a>
+        <a class="tab {% if sheet == 'export_e42' %}active{% endif %}" href="?sheet=export_e42">Xuất khẩu E42</a>
+        <a class="tab {% if sheet == 'machinery_e13' %}active{% endif %}" href="?sheet=machinery_e13">Máy móc E13</a>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>{{ sheet_meta.title }}</h2>
+        <div class="meta">{{ sheet_meta.subtitle }}</div>
+    </div>
+
+    {% set qty_diff = sap_qty_sum - cus_qty_sum %}
+    {% set qty_pct = (qty_diff / cus_qty_sum * 100) if cus_qty_sum else 0 %}
+
+    <div class="kpi">
+        <div class="kpi-cell">
+            <div class="k">{{ sheet_meta.sap_label }}</div>
+            <div class="v">{{ sap_qty_sum | num(0) }}</div>
+            <div class="d">{{ sap_value_sum | num(0) }} VND</div>
+        </div>
+        <div class="kpi-cell">
+            <div class="k">{{ sheet_meta.cus_label }}</div>
+            <div class="v">{{ cus_qty_sum | num(0) }}</div>
+            <div class="d">{{ cus_value_sum | num(0) }} VND</div>
+        </div>
+        <div class="kpi-cell {% if qty_pct|abs < 1 %}success{% elif qty_pct|abs < 5 %}warning{% else %}error{% endif %}">
+            <div class="k">Chênh lệch</div>
+            <div class="v">{{ qty_diff | num(0) }}</div>
+            <div class="d">{{ qty_pct | num(2) }}% tương đối</div>
+        </div>
+        <div class="kpi-cell">
+            <div class="k">Số mã đối chiếu</div>
+            <div class="v">{{ n_total | num }}</div>
+            <div class="d">
+                {% for s, n in status_counts.items() %}{% if not loop.first %} · {% endif %}{{ n }} {{ s|lower }}{% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Chi tiết</h2>
+        <div class="row" style="gap: 4px; flex-wrap: wrap;">
+            <a class="btn btn-sm {% if filter == 'all' %}btn-primary{% endif %}" href="?sheet={{ sheet }}">Tất cả</a>
+            <a class="btn btn-sm {% if filter == 'match' %}btn-primary{% endif %}" href="?sheet={{ sheet }}&filter=match">Khớp (&lt;5%)</a>
+            <a class="btn btn-sm {% if filter == 'diff_high' %}btn-primary{% endif %}" href="?sheet={{ sheet }}&filter=diff_high">Lệch ≥5%</a>
+            <a class="btn btn-sm {% if filter == 'sap_only' %}btn-primary{% endif %}" href="?sheet={{ sheet }}&filter=sap_only">Chỉ có ở SAP</a>
+            <a class="btn btn-sm {% if filter == 'customs_only' %}btn-primary{% endif %}" href="?sheet={{ sheet }}&filter=customs_only">Chỉ có ở HQ</a>
+        </div>
+    </div>
+    <div class="panel"><div class="table-wrap">
+        <table class="data sortable">
+            <thead><tr>
+                <th data-sort="text">Mã</th>
+                {% if sheet_meta.title.startswith("Tổng nhập") %}<th>Loại hình</th>{% endif %}
+                <th class="num" data-sort="num">SAP SL</th>
+                <th class="num" data-sort="num">HQ SL</th>
+                <th class="num" data-sort="num">Lệch</th>
+                <th class="num" data-sort="num">% Lệch</th>
+                <th>Trạng thái</th>
+            </tr></thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="mono"><a href="/c/{{ company.slug }}/material/{{ r.material }}">{{ r.material }}</a></td>
+                    {% if sheet_meta.title.startswith("Tổng nhập") %}
+                    <td>
+                        {% if r.customs_types %}
+                            {% for ct in r.customs_types.split(',') %}<span class="badge info mono tiny">{{ ct }}</span> {% endfor %}
+                        {% else %}<span class="muted small">—</span>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td class="num">{{ r.sap_qty | num }}</td>
+                    <td class="num">{{ r.cus_qty | num }}</td>
+                    <td class="num"><strong>{{ r.qty_diff | num }}</strong></td>
+                    <td class="num">
+                        {% if r.qty_diff_pct is not none %}
+                            <span class="badge {% if r.qty_diff_pct|abs < 1 %}success{% elif r.qty_diff_pct|abs < 5 %}warning{% else %}critical{% endif %}">{{ r.qty_diff_pct | num(2) }}%</span>
+                        {% else %}<span class="muted small">—</span>{% endif %}
+                    </td>
+                    <td><span class="badge {% if r.match_status == 'MATCH' %}success{% elif r.match_status in ('SAP_ONLY','CUSTOMS_ONLY') %}warning{% else %}neutral{% endif %} small">{{ r.match_status or "—" }}</span></td>
+                </tr>
+                {% endfor %}
+                {% if not rows %}<tr><td colspan="7" class="no-data">Không có mã trong nhóm "{{ filter_label }}".</td></tr>{% endif %}
+            </tbody>
+        </table>
+    </div></div>
+    <p class="tiny muted" style="margin-top: 6px;">Hiển thị tối đa 200 mã, sắp xếp theo độ lệch giảm dần.</p>
+</section>
+{% endblock %}

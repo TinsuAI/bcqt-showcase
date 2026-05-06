@@ -27,6 +27,7 @@ from app.models import (
     BomEdge,
     BomNode,
     Company,
+    CrosscheckRow,
     Investigation,
     Material,
     Mau15aRow,
@@ -549,6 +550,51 @@ def seed_curated_bom(db, company: Company) -> None:
     db.add_all(edges_buf)
 
 
+def seed_crosschecks(db, company: Company) -> None:
+    """Pull CROSSCHECK_MB51_BAOCAO.xlsx — 3 sheet (Imports / Export E42 / Machinery E13)."""
+    f = OUT / "CROSSCHECK_MB51_BAOCAO.xlsx"
+    if not f.exists():
+        return
+    sheets = {
+        "all_imports": ("sap_receipt_qty", "sap_receipt_value", "sap_receipt_rows",
+                        "cus_import_qty", "cus_import_value", "cus_import_rows", "customs_types"),
+        "export_e42": ("sap_export_qty", "sap_export_value", "sap_export_rows",
+                       "cus_e42_qty", "cus_e42_value", "cus_e42_rows", None),
+        "machinery_e13": ("sap_receipt_qty", "sap_receipt_value", "sap_receipt_rows",
+                          "cus_e13_qty", "cus_e13_value", "cus_e13_rows", None),
+    }
+    sheet_names = {"all_imports": "All_Imports", "export_e42": "Export_E42", "machinery_e13": "Machinery_E13"}
+
+    rows_buf = []
+    for key, cols in sheets.items():
+        try:
+            df = pd.read_excel(f, sheet_name=sheet_names[key])
+        except Exception:
+            continue
+        sap_q, sap_v, sap_r, cus_q, cus_v, cus_r, ct_col = cols
+        for _, r in df.iterrows():
+            mat = _safe_str(r.get("material"))
+            if not mat:
+                continue
+            rows_buf.append(CrosscheckRow(
+                company_id=company.id,
+                sheet=key,
+                material=mat[:64],
+                sap_qty=float(r.get(sap_q) or 0),
+                sap_value=float(r.get(sap_v) or 0),
+                sap_rows=int(r.get(sap_r) or 0),
+                cus_qty=float(r.get(cus_q) or 0),
+                cus_value=float(r.get(cus_v) or 0),
+                cus_rows=int(r.get(cus_r) or 0),
+                customs_types=_safe_str(r.get(ct_col)) if ct_col else None,
+                qty_diff=float(r.get("qty_diff") or 0),
+                qty_diff_pct=float(r["qty_diff_pct"]) if pd.notna(r.get("qty_diff_pct")) else None,
+                match_status=_safe_str(r.get("match_status")),
+                material_category=_safe_str(r.get("material_category")),
+            ))
+    db.add_all(rows_buf)
+
+
 def seed_phase_artifacts(db, company: Company) -> None:
     """File input/output mỗi phase tạo ra — list để show ở per-phase page."""
     items = [
@@ -930,6 +976,7 @@ def main() -> None:
         seed_mau16(db, company)
         seed_bom_cycles(db, company)
         seed_curated_bom(db, company)
+        seed_crosschecks(db, company)
         seed_phase_artifacts(db, company)
         seed_pipeline_runs(db, company)
         seed_nvl_traceability(db, company)
@@ -942,7 +989,7 @@ def main() -> None:
         print(f"[seed] OK — main company id={n.id} slug={n.slug}")
         for tbl in (Material, Mb51Movement, BcctRecord, AuditFinding, Investigation,
                     Mau15Row, Mau15aRow, Mau16Row, BomCycle, BomCycleEdge,
-                    PhaseArtifact, PipelineRun, BomNode, BomEdge,
+                    PhaseArtifact, PipelineRun, BomNode, BomEdge, CrosscheckRow,
                     NvlTraceability, RiskFinding, ProcessLog, ValidationResult):
             cnt = db.scalar(select(__import__("sqlalchemy").func.count()).select_from(tbl))
             print(f"  {tbl.__tablename__:24s} {cnt:>8d}")

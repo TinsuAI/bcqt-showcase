@@ -9,7 +9,21 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import BomEdge, BomNode, Mau16Row, NvlTraceability, PipelineRun, ProcessLog, RiskFinding
+from app.models import (
+    BcctRecord,
+    BomEdge,
+    BomNode,
+    CrosscheckRow,
+    Material,
+    Mau15aRow,
+    Mau15Row,
+    Mau16Row,
+    Mb51Movement,
+    NvlTraceability,
+    PipelineRun,
+    ProcessLog,
+    RiskFinding,
+)
 from app.routes.companies import get_company_or_404
 
 router = APIRouter(prefix="/c/{slug}", tags=["insights"])
@@ -107,6 +121,111 @@ def process_log(slug: str, request: Request, db: Session = Depends(get_db),
     return request.app.state.render(
         request, "insights/log.html",
         company=c, logs=logs, selected_phase=phase,
+    )
+
+
+@router.get("/material/{code}")
+def material_profile(slug: str, code: str, request: Request, db: Session = Depends(get_db)):
+    """Hồ sơ 1 mã — single source of truth: master + MB51 + BCCT + M15/15a/16 + truy vết + BOM."""
+    c = get_company_or_404(db, slug)
+
+    # Master classification
+    master = db.scalar(
+        select(Material).where(Material.company_id == c.id, Material.code == code)
+    )
+
+    # MB51 movements summary (count + qty by MvT)
+    mb51_summary = db.execute(
+        select(
+            Mb51Movement.movement_type,
+            func.count(),
+            func.sum(Mb51Movement.quantity),
+        )
+        .where(Mb51Movement.company_id == c.id, Mb51Movement.material == code)
+        .group_by(Mb51Movement.movement_type)
+        .order_by(desc(func.count()))
+    ).all()
+    mb51_total = db.scalar(
+        select(func.count()).select_from(Mb51Movement)
+        .where(Mb51Movement.company_id == c.id, Mb51Movement.material == code)
+    ) or 0
+    mb51_sample = db.scalars(
+        select(Mb51Movement)
+        .where(Mb51Movement.company_id == c.id, Mb51Movement.material == code)
+        .order_by(desc(Mb51Movement.posting_date))
+        .limit(10)
+    ).all()
+
+    # BCCT records (HQ thực ra dùng material_code khác — best effort)
+    bcct_records = db.scalars(
+        select(BcctRecord)
+        .where(BcctRecord.company_id == c.id, BcctRecord.material == code)
+        .limit(15)
+    ).all()
+    bcct_total = db.scalar(
+        select(func.count()).select_from(BcctRecord)
+        .where(BcctRecord.company_id == c.id, BcctRecord.material == code)
+    ) or 0
+
+    # M15 (NVL) row
+    m15 = db.scalar(
+        select(Mau15Row).where(Mau15Row.company_id == c.id, Mau15Row.material == code)
+    )
+
+    # M15a (TP XK) row
+    m15a = db.scalar(
+        select(Mau15aRow).where(Mau15aRow.company_id == c.id, Mau15aRow.material == code)
+    )
+
+    # M16 — nếu là TP: list NVL inputs
+    m16_as_tp = db.scalars(
+        select(Mau16Row)
+        .where(Mau16Row.company_id == c.id, Mau16Row.tp_code == code)
+        .order_by(desc(Mau16Row.norm))
+        .limit(50)
+    ).all()
+    # M16 — nếu là NVL: list TP outputs
+    m16_as_nvl = db.scalars(
+        select(Mau16Row)
+        .where(Mau16Row.company_id == c.id, Mau16Row.nvl_code == code)
+        .order_by(desc(Mau16Row.norm))
+        .limit(20)
+    ).all()
+
+    # Truy vết NVL row
+    trace = db.scalar(
+        select(NvlTraceability).where(
+            NvlTraceability.company_id == c.id, NvlTraceability.material == code
+        )
+    )
+
+    # Có trong BOM curated không?
+    has_bom_graph = db.scalar(
+        select(BomNode.tp_code).where(
+            BomNode.company_id == c.id, BomNode.tp_code == code, BomNode.level == 0
+        )
+    ) is not None
+
+    # Phát hiện vai trò để hiển thị header badge
+    role = "Khác"
+    if m15a:
+        role = "Thành phẩm xuất khẩu"
+    elif master and master.category == "TP":
+        role = "Thành phẩm"
+    elif master and master.category in ("BTP_SX", "BTP_NM"):
+        role = "Bán thành phẩm"
+    elif master and master.category == "NVL":
+        role = "Nguyên vật liệu"
+    elif master and master.category == "CCDC":
+        role = "CCDC"
+
+    return request.app.state.render(
+        request, "insights/material.html",
+        company=c, code=code, role=role, master=master,
+        mb51_summary=mb51_summary, mb51_total=mb51_total, mb51_sample=mb51_sample,
+        bcct_records=bcct_records, bcct_total=bcct_total,
+        m15=m15, m15a=m15a, m16_as_tp=m16_as_tp, m16_as_nvl=m16_as_nvl,
+        trace=trace, has_bom_graph=has_bom_graph,
     )
 
 
@@ -208,6 +327,96 @@ def bom(slug: str, request: Request, db: Session = Depends(get_db),
         n_edges_total=n_edges_total,
         search_miss=search_miss, search_q=tp or "",
     )
+
+
+@router.get("/crosscheck")
+def crosscheck(slug: str, request: Request, db: Session = Depends(get_db),
+               sheet: str = Query("all_imports"), filter: str | None = Query(None)):
+    """Tự đối chiếu chéo HQ vs SAP — cho DN soi trước khi HQ soi."""
+    c = get_company_or_404(db, slug)
+
+    sheet_meta = {
+        "all_imports": {
+            "title": "Tổng nhập khẩu (E11/E13/E15/G…)",
+            "subtitle": "So lượng nhập trong báo cáo VNACCS với chuyển động nhập kho SAP (MvT 101+102).",
+            "sap_label": "SAP nhập kho",
+            "cus_label": "HQ nhập (BCCT)",
+        },
+        "export_e42": {
+            "title": "Xuất khẩu E42 (DNCX)",
+            "subtitle": "So lượng xuất khẩu E42 trong VNACCS với MvT 901/902 SAP.",
+            "sap_label": "SAP xuất khẩu",
+            "cus_label": "HQ E42",
+        },
+        "machinery_e13": {
+            "title": "Máy móc E13",
+            "subtitle": "So lượng E13 trong VNACCS với SAP (mã có hành vi khác NVL — kiểm tra scope CCDC vs vật tư tiêu hao theo CV 3304).",
+            "sap_label": "SAP nhập",
+            "cus_label": "HQ E13",
+        },
+    }
+    if sheet not in sheet_meta:
+        sheet = "all_imports"
+
+    # Aggregate summary
+    summary = db.execute(
+        select(
+            func.count(),
+            func.sum(CrosscheckRow.sap_qty),
+            func.sum(CrosscheckRow.cus_qty),
+            func.sum(CrosscheckRow.sap_value),
+            func.sum(CrosscheckRow.cus_value),
+        ).where(CrosscheckRow.company_id == c.id, CrosscheckRow.sheet == sheet)
+    ).one()
+    n_total, sap_qty_sum, cus_qty_sum, sap_value_sum, cus_value_sum = summary
+    sap_qty_sum = float(sap_qty_sum or 0)
+    cus_qty_sum = float(cus_qty_sum or 0)
+
+    # Status breakdown
+    status_counts = dict(db.execute(
+        select(CrosscheckRow.match_status, func.count())
+        .where(CrosscheckRow.company_id == c.id, CrosscheckRow.sheet == sheet)
+        .group_by(CrosscheckRow.match_status)
+    ).all())
+
+    # Filter rows
+    stmt = select(CrosscheckRow).where(
+        CrosscheckRow.company_id == c.id, CrosscheckRow.sheet == sheet
+    )
+    filter_label = "Tất cả"
+    if filter == "sap_only":
+        stmt = stmt.where(CrosscheckRow.cus_qty == 0, CrosscheckRow.sap_qty != 0)
+        filter_label = "Chỉ có ở SAP (chưa khai HQ?)"
+    elif filter == "customs_only":
+        stmt = stmt.where(CrosscheckRow.sap_qty == 0, CrosscheckRow.cus_qty != 0)
+        filter_label = "Chỉ có ở HQ (chưa nhập kho SAP?)"
+    elif filter == "diff_high":
+        stmt = stmt.where(func.abs(CrosscheckRow.qty_diff_pct) >= 5)
+        filter_label = "Lệch ≥5%"
+    elif filter == "match":
+        stmt = stmt.where(
+            CrosscheckRow.sap_qty != 0, CrosscheckRow.cus_qty != 0,
+            func.abs(CrosscheckRow.qty_diff_pct) < 5,
+        )
+        filter_label = "Khớp (lệch <5%)"
+
+    rows = db.scalars(stmt.order_by(desc(func.abs(CrosscheckRow.qty_diff))).limit(200)).all()
+
+    return request.app.state.render(
+        request, "insights/crosscheck.html",
+        company=c, sheet=sheet, sheet_meta=sheet_meta[sheet],
+        n_total=n_total or 0,
+        sap_qty_sum=sap_qty_sum, cus_qty_sum=cus_qty_sum,
+        sap_value_sum=float(sap_value_sum or 0), cus_value_sum=float(cus_value_sum or 0),
+        status_counts=status_counts,
+        rows=rows, filter=filter or "all", filter_label=filter_label,
+    )
+
+
+@router.get("/methodology")
+def methodology(slug: str, request: Request, db: Session = Depends(get_db)):
+    c = get_company_or_404(db, slug)
+    return request.app.state.render(request, "insights/methodology.html", company=c)
 
 
 @router.get("/runs")

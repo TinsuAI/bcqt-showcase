@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.config import settings
 from app.db import Base, engine
+from app.legal import EXCERPTS as LEGAL_EXCERPTS
 from app.routes import companies, insights, landing, phases
 from app.utils import fmt_money, fmt_num, fmt_pct, parse_metrics, vi_direction, vi_severity, vi_status
 
@@ -34,6 +35,7 @@ templates.env.filters["metrics"] = parse_metrics
 templates.env.filters["vi_status"] = vi_status
 templates.env.filters["vi_severity"] = vi_severity
 templates.env.filters["vi_direction"] = vi_direction
+templates.env.globals["LEGAL"] = LEGAL_EXCERPTS
 
 
 def render(request: Request, tpl: str, **ctx) -> HTMLResponse:

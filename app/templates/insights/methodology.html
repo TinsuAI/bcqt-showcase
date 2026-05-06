@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% from "_macros.html" import legal_ref %}
+{% block title %}Phương pháp luận — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Phương pháp luận</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Phương pháp luận pipeline báo cáo quyết toán</h1>
+            <div class="meta">
+                Cách Trọng Tín đi từ dữ liệu thô SAP/VNACCS đến 3 mẫu nộp Hải quan, có thể đối chiếu với văn bản pháp lý.
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="grid-12">
+        <article class="stack">
+            {# ─── Triết lý tổng quan ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>1. Triết lý xử lý</h3></div>
+                <div class="panel-body methodology-body">
+                    <p>Báo cáo quyết toán hải quan ({{ legal_ref("TT 38/2015 Đ55") }} sửa đổi bởi {{ legal_ref("TT 39/2018 K35Đ1") }})
+                        yêu cầu doanh nghiệp tự xây dựng, lưu giữ định mức thực tế và chịu trách nhiệm trước pháp luật.
+                        Pipeline của chúng tôi không "tạo ra" định mức mà <strong>trích xuất định mức bình quân thực tế</strong>
+                        từ chính dữ liệu SAP của doanh nghiệp.</p>
+                    <p>Nguyên tắc: <strong>Hành vi sản xuất thực tế &gt; Phân loại nội bộ (Material Type) &gt; TK kế toán</strong>.
+                        Khi dữ liệu nội bộ không nhất quán, lấy hành vi MB51 làm chuẩn (vì hải quan kiểm tra dòng vật chất, không phải sổ sách).</p>
+                </div>
+            </div>
+
+            {# ─── 6 phase ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>2. Pipeline 6 giai đoạn</h3></div>
+                <div class="panel-body methodology-body">
+                    <ol class="method-steps">
+                        <li>
+                            <strong>Chuẩn hoá &amp; làm sạch.</strong>
+                            Đọc 3 nguồn thô: SAP MB51 (chuyển động kho), SAP MB5B (tồn kho + Material Master), VNACCS BCCT (báo cáo chi tiết tờ khai).
+                            Rename cột Trung-Anh, convert serial date, dedup, drop garbage rows. Output: 3 file CLEAN_*.
+                        </li>
+                        <li>
+                            <strong>Phân tích &amp; bổ sung.</strong>
+                            Phân loại 20.064 mã Material Master thành NVL/BTP/TP/CCDC theo cặp (TK kế toán, Material Type SAP).
+                            2.100 mã có mâu thuẫn được cờ riêng để khách xác nhận trước khi sang Phase 5.
+                        </li>
+                        <li>
+                            <strong>Audit chất lượng.</strong>
+                            13 kiểm tra nội bộ (UOM mismatch, GL conflict, mass conservation, ...) + 5 đối chiếu chéo (MB51 ↔ MB5B, MB51 ↔ BCCT).
+                        </li>
+                        <li>
+                            <strong>Điều tra bất thường.</strong>
+                            4 cuộc điều tra: manual review 5.596 mã, customs-only 71 mã, MvT 122/B13 268 mã, phân loại tĩnh vs hành vi 340 mã.
+                        </li>
+                        <li>
+                            <strong>Lập mẫu quyết toán.</strong>
+                            {{ legal_ref("PL V Mẫu 15/15a") }} + {{ legal_ref("PL II Mẫu 16") }}. BOM flatten về NVL gốc, giải vòng tròn bằng hệ tuyến tính, FIFO cho dual-source.
+                        </li>
+                        <li>
+                            <strong>Xác thực kết quả.</strong>
+                            9 kiểm thử bất biến: bảo toàn khối lượng, khớp HQ, không âm. Fail bất kỳ → quay lại Phase 5.
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+            {# ─── BOM Flatten ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>3. BOM Flatten — đưa BTP về NVL gốc</h3></div>
+                <div class="panel-body methodology-body">
+                    <p>{{ legal_ref("PL II Mẫu 16") }} chỉ chấp nhận quan hệ <em>NVL gốc ↔ Thành phẩm xuất khẩu</em>.
+                        Bán thành phẩm tự sản xuất (BTP_SX) không xuất hiện trên Mẫu 16 — phải flatten ngược về NVL gốc cấu thành nó.</p>
+                    <div class="formula">
+                        <div>
+                            <code>flat_norm[NVL][TP] = direct_norm[NVL][TP]</code>
+                            <span class="muted small">+ ∑<sub>BTP</sub> direct_norm[BTP][TP] × flat_norm[NVL][BTP]</span>
+                        </div>
+                    </div>
+                    <p>Thuật toán: topological sort (Kahn) từ leaf (NVL gốc, level 1) lên root (TP XK). Mỗi BTP flatten 1 lần, kết quả reuse cho TP cấp cao hơn.</p>
+                    <p class="tiny muted">Mã có trong dữ liệu hải quan (NK/XK qua biên giới) → giữ ở Level 1 dù có sản xuất nội bộ — vì hải quan theo dõi vật tư qua biên giới.</p>
+                </div>
+            </div>
+
+            {# ─── Cycle solver ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>4. Vòng tròn sản xuất — giải bằng đại số tuyến tính</h3></div>
+                <div class="panel-body methodology-body">
+                    <p>Khi 2+ mã thành phẩm chuyển đổi qua lại nhau (vd phiên bản US ↔ phiên bản EU ↔ phiên bản ASIA), topological sort phá sản.
+                        Đây là hiện tượng <em>"chuyển đổi phiên bản"</em>: tháo nhãn phiên bản này, dán nhãn phiên bản khác — không tiêu hao NVL mới.</p>
+                    <p>Pipeline phát hiện bằng <strong>Tarjan's SCC</strong> rồi giải bằng hệ phương trình tuyến tính trên mỗi nhóm liên thông mạnh:</p>
+                    <div class="formula">
+                        <code>(I − C) · X = K</code>
+                    </div>
+                    <p class="small">Trong đó: <code>C</code> là ma trận norm cross giữa các mã trong cycle; <code>K</code> là norm sang NVL gốc ngoài cycle; <code>X</code> là flatten norm cuối cùng.
+                        Tất cả ρ(C) &lt; 1 → chuỗi geometric hội tụ. Hệ số khuếch đại Johnson 1.002–2.0 — không phantom consumption, đại diện đúng vòng quay vật chất.</p>
+                </div>
+            </div>
+
+            {# ─── Dual source ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>5. Dual-source FIFO</h3></div>
+                <div class="panel-body methodology-body">
+                    <p>556 mã NVL của Johnson có <strong>2 nguồn gốc song song</strong>: vừa nhập khẩu (qua HQ) vừa tự sản xuất nội bộ.
+                        Mẫu 15 chỉ khai phần qua biên giới HQ — pipeline tách bằng FIFO theo thứ tự thời gian xuất kho.</p>
+                    <p>Sheet <code>Dual_Source_FIFO</code> trong hồ sơ giải trình lưu phân bổ chi tiết (HQ vs nội bộ) cho từng mã, từng kỳ. <code>chenh_lech = 0</code> trên cả 556 mã.</p>
+                </div>
+            </div>
+
+            {# ─── Truy vết ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>6. Truy vết &amp; bảo toàn khối lượng</h3></div>
+                <div class="panel-body methodology-body">
+                    <p>Mỗi đơn vị NVL xuất sản xuất phải đi vào một trong 4 đích:</p>
+                    <div class="formula">
+                        <code>xuất_SX = vào_TP_xuất_khẩu + khoá_TP_tồn + khoá_BTP_tồn + còn_lại</code>
+                    </div>
+                    <p>Trên dữ liệu Johnson 2025: <strong>99,9% giải trình được</strong> (4.750.685 / 4.757.304 đơn vị).
+                        Phần còn lại 6.619 đv (~0,14%) phần lớn từ 3 mã thép tấm SPHC — đặc thù hao hụt cắt dập, có chứng cứ kỹ thuật riêng.</p>
+                </div>
+            </div>
+
+            {# ─── Audit defensible ─── #}
+            <div class="panel">
+                <div class="panel-head"><h3>7. Bằng chứng defensible khi thanh tra</h3></div>
+                <div class="panel-body methodology-body">
+                    <p>Mọi quyết định nghiệp vụ ghi vào <strong>Hồ sơ giải trình</strong> (12 sheet Excel) cho phép cán bộ HQ truy ngược:</p>
+                    <ul>
+                        <li><code>Material_Classification</code> — phân loại + lý do override (nếu có)</li>
+                        <li><code>BOM_Direct</code>, <code>BOM_Flat</code> — quan hệ định mức trực tiếp + flatten</li>
+                        <li><code>Order_Detail</code> — từng lệnh sản xuất với input/output</li>
+                        <li><code>Conversion_Orders</code> — 167 lệnh chuyển đổi phiên bản</li>
+                        <li><code>BOM_Cycles</code> — 20 nhóm liên thông + cách giải</li>
+                        <li><code>Dual_Source_FIFO</code>, <code>Nguon_Kep_Phan_Bo</code> — phân bổ HQ vs nội bộ</li>
+                        <li><code>NVL_Traceability</code> — truy vết từng mã</li>
+                        <li><code>Validation</code> — 9 kiểm thử bất biến cuối</li>
+                    </ul>
+                    <p>{{ legal_ref("TT 121/2025") }} hiệu lực 01/02/2026 yêu cầu DN phải có thuật toán quy đổi hàng dở dang —
+                        chính xác là cái pipeline này đang làm.</p>
+                </div>
+            </div>
+        </article>
+
+        <aside class="stack">
+            <div class="panel">
+                <div class="panel-head"><h3>Mục lục</h3></div>
+                <div class="panel-body dense">
+                    <a class="row-line" href="#">1. Triết lý xử lý</a>
+                    <a class="row-line" href="#">2. Pipeline 6 giai đoạn</a>
+                    <a class="row-line" href="#">3. BOM Flatten</a>
+                    <a class="row-line" href="#">4. Vòng tròn sản xuất</a>
+                    <a class="row-line" href="#">5. Dual-source FIFO</a>
+                    <a class="row-line" href="#">6. Truy vết</a>
+                    <a class="row-line" href="#">7. Bằng chứng defensible</a>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head"><h3>Văn bản chính</h3></div>
+                <div class="panel-body dense">
+                    <div class="row-line">{{ legal_ref("TT 38/2015 Đ55") }}</div>
+                    <div class="row-line">{{ legal_ref("TT 39/2018 K35Đ1") }}</div>
+                    <div class="row-line">{{ legal_ref("TT 121/2025") }}</div>
+                    <div class="row-line">{{ legal_ref("PL II Mẫu 16") }}</div>
+                    <div class="row-line">{{ legal_ref("PL V Mẫu 15/15a") }}</div>
+                    <div class="row-line">{{ legal_ref("QĐ 1357/QĐ-TCHQ", "QĐ 1357") }}</div>
+                    <div class="row-line">{{ legal_ref("CV 3304/TCHQ-GSQL") }}</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

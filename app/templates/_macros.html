@@ -1,0 +1,17 @@
+{# Shared macros: legal_ref tooltip + others. Include via {% from "_macros.html" import legal_ref %} #}
+
+{% macro legal_ref(code, label=None) %}
+{% set entry = LEGAL.get(code) %}
+{% if entry %}
+<span class="legal-ref" tabindex="0">
+  <span class="legal-ref-label mono">{{ label or code }}</span>
+  <span class="legal-popover" role="tooltip">
+    <strong>{{ entry.title }}</strong>
+    <span class="legal-doc">{{ entry.doc }} · {{ entry.issuer }}</span>
+    <span class="legal-excerpt">{{ entry.excerpt }}</span>
+  </span>
+</span>
+{% else %}
+<span class="badge primary mono">{{ label or code }}</span>
+{% endif %}
+{% endmacro %}

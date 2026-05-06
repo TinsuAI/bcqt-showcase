@@ -281,6 +281,28 @@ class PipelineRun(Base):
     note: Mapped[str | None] = mapped_column(String(512))
 
 
+class CrosscheckRow(Base):
+    """Tự đối chiếu chéo HQ (BCCT) vs SAP (MB51) — pre-aggregated theo mã."""
+
+    __tablename__ = "crosscheck_rows"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    sheet: Mapped[str] = mapped_column(String(32), index=True)  # all_imports / export_e42 / machinery_e13
+    material: Mapped[str] = mapped_column(String(64), index=True)
+    sap_qty: Mapped[float] = mapped_column(Float, default=0.0)
+    sap_value: Mapped[float] = mapped_column(Float, default=0.0)
+    sap_rows: Mapped[int] = mapped_column(Integer, default=0)
+    cus_qty: Mapped[float] = mapped_column(Float, default=0.0)
+    cus_value: Mapped[float] = mapped_column(Float, default=0.0)
+    cus_rows: Mapped[int] = mapped_column(Integer, default=0)
+    customs_types: Mapped[str | None] = mapped_column(String(64))
+    qty_diff: Mapped[float] = mapped_column(Float, default=0.0)
+    qty_diff_pct: Mapped[float | None] = mapped_column(Float)
+    match_status: Mapped[str | None] = mapped_column(String(32))
+    material_category: Mapped[str | None] = mapped_column(String(32))
+
+
 class NvlTraceability(Base):
     """Truy vết NVL — mỗi mã: xuất SX → vào TP / khoá BTP / khoá TP / còn lại."""
 

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import legal_ref %}
 {% block title %}Bảng điều khiển — BCQT Showcase{% endblock %}
 
 {% block content %}
@@ -49,6 +50,61 @@
         </div>
     </div>
 </section>
+
+{% if main %}
+<section class="section">
+    <div class="section-head">
+        <h2>Trước → Sau khi Trọng Tín xử lý</h2>
+        <div class="meta">Số liệu thực từ dự án ẩn danh — đo lường tác động xử lý qua 6 phase pipeline.</div>
+    </div>
+    <div class="panel">
+        <div class="ba-grid">
+            <div class="ba-row">
+                <div class="ba-label">Tỉ lệ truy vết NVL</div>
+                <div class="ba-before">~78%</div>
+                <div class="ba-arrow">→</div>
+                <div class="ba-after success">99,9%</div>
+                <div class="ba-meta">Bản đầu tiên DN gửi · Sau v12.0</div>
+            </div>
+            <div class="ba-row">
+                <div class="ba-label">NVL không truy được</div>
+                <div class="ba-before">~1.040.000 đv</div>
+                <div class="ba-arrow">→</div>
+                <div class="ba-after success">6.619 đv</div>
+                <div class="ba-meta">Còn lại 0,14% — hao hụt cắt dập có giải trình</div>
+            </div>
+            <div class="ba-row">
+                <div class="ba-label">Mâu thuẫn phân loại</div>
+                <div class="ba-before">2.100 mã</div>
+                <div class="ba-arrow">→</div>
+                <div class="ba-after success">0 mã treo</div>
+                <div class="ba-meta">Sau khi phòng kế toán + kho xác nhận</div>
+            </div>
+            <div class="ba-row">
+                <div class="ba-label">Vòng tròn sản xuất</div>
+                <div class="ba-before">Topological sort phá sản</div>
+                <div class="ba-arrow">→</div>
+                <div class="ba-after success">20 SCC giải đóng</div>
+                <div class="ba-meta">Tarjan + giải hệ tuyến tính (I − C)·X = K</div>
+            </div>
+            <div class="ba-row">
+                <div class="ba-label">Mẫu 16 — định mức công bố</div>
+                <div class="ba-before">BOM thô không đồng nhất</div>
+                <div class="ba-arrow">→</div>
+                <div class="ba-after success">42.676 dòng</div>
+                <div class="ba-meta">517 TP × NVL gốc, flatten qua BTP</div>
+            </div>
+            <div class="ba-row">
+                <div class="ba-label">Kiểm thử bất biến cuối</div>
+                <div class="ba-before">Chưa có khung kiểm tra</div>
+                <div class="ba-arrow">→</div>
+                <div class="ba-after success">9/9 Đạt</div>
+                <div class="ba-meta">Mass conservation + khớp HQ + không âm</div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
 
 {% if top_risks and main %}
 <section class="section">
@@ -129,14 +185,15 @@
         <div class="panel">
             <div class="panel-body">
                 <div class="doc-strip">
-                    <div class="doc-line"><span class="ref">TT 38/2015 Đ55</span><span class="desc">Định mức thực tế</span></div>
-                    <div class="doc-line"><span class="ref">TT 39/2018 K35Đ1</span><span class="desc">Sửa đổi Điều 55</span></div>
-                    <div class="doc-line"><span class="ref">TT 121/2025</span><span class="desc">Quy đổi hàng dở dang (01/02/2026)</span></div>
-                    <div class="doc-line"><span class="ref">PL II Mẫu 16</span><span class="desc">Định mức thực tế NVL ↔ TP XK</span></div>
-                    <div class="doc-line"><span class="ref">PL V Mẫu 15/15a</span><span class="desc">Nhập-xuất-tồn NVL/TP</span></div>
-                    <div class="doc-line"><span class="ref">QĐ 1357/TCHQ</span><span class="desc">Mã loại hình (40 mã)</span></div>
-                    <div class="doc-line"><span class="ref">CV 3304/TCHQ-GSQL</span><span class="desc">CCDC vs vật tư tiêu hao</span></div>
+                    <div class="doc-line">{{ legal_ref("TT 38/2015 Đ55") }}<span class="desc">Định mức thực tế</span></div>
+                    <div class="doc-line">{{ legal_ref("TT 39/2018 K35Đ1") }}<span class="desc">Sửa đổi Điều 55</span></div>
+                    <div class="doc-line">{{ legal_ref("TT 121/2025") }}<span class="desc">Quy đổi hàng dở dang (01/02/2026)</span></div>
+                    <div class="doc-line">{{ legal_ref("PL II Mẫu 16") }}<span class="desc">Định mức thực tế NVL ↔ TP XK</span></div>
+                    <div class="doc-line">{{ legal_ref("PL V Mẫu 15/15a") }}<span class="desc">Nhập-xuất-tồn NVL/TP</span></div>
+                    <div class="doc-line">{{ legal_ref("QĐ 1357/QĐ-TCHQ", "QĐ 1357/TCHQ") }}<span class="desc">Mã loại hình (40 mã)</span></div>
+                    <div class="doc-line">{{ legal_ref("CV 3304/TCHQ-GSQL") }}<span class="desc">CCDC vs vật tư tiêu hao</span></div>
                 </div>
+                <p class="tiny muted" style="margin-top: 10px;">Di chuột vào mỗi tag để xem trích đoạn nguyên văn.</p>
             </div>
         </div>
     </section>
