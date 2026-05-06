@@ -14,16 +14,53 @@
                 Mỗi mã thành phẩm xuất khẩu đều có 1 cây BOM truy ngược về NVL gốc — pipeline tự dựng từ MB51 thật, không phụ thuộc BOM khai báo nội bộ.
             </div>
         </div>
-        <div class="page-actions">
-            <span class="badge neutral">{{ gallery | length }} TP đại diện</span>
-        </div>
     </div>
 </div>
 
 <section class="section">
+    <div class="kpi">
+        <div class="kpi-cell primary">
+            <div class="k">TP có BOM</div>
+            <div class="v">{{ n_tp_total | num }}</div>
+            <div class="d">tất cả TP xuất khẩu (Mẫu 15a)</div>
+        </div>
+        <div class="kpi-cell">
+            <div class="k">Tổng nodes</div>
+            <div class="v">{{ n_nodes_total | num }}</div>
+            <div class="d">{{ "%.1f" | format(n_nodes_total / n_tp_total) if n_tp_total else 0 }} mã/TP trung bình</div>
+        </div>
+        <div class="kpi-cell">
+            <div class="k">Tổng cạnh BOM</div>
+            <div class="v">{{ n_edges_total | num }}</div>
+            <div class="d">quan hệ output ← input</div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
     <div class="section-head">
-        <h2>Chọn thành phẩm để xem</h2>
-        <div class="meta">6 TP đại diện — chain 2 cấp, 8-18 NVL, không thuộc cycle.</div>
+        <h2>Tra cứu theo mã TP</h2>
+        <div class="meta">Nhập mã chính xác — pipeline đã pre-compute đồ thị cho toàn bộ {{ n_tp_total }} TP.</div>
+    </div>
+    <div class="panel">
+        <div class="panel-body">
+            <form action="/c/{{ company.slug }}/bom" method="get" style="display: flex; gap: 8px;">
+                <input class="input" type="search" name="tp" placeholder="VD: MGM1212-406, MEP2554-01US, …" value="{{ search_q }}" style="max-width: 320px;">
+                <button class="btn btn-primary btn-sm" type="submit">Xem đồ thị</button>
+            </form>
+            {% if search_miss %}
+            <p class="tiny" style="color: var(--error); margin-top: 10px;">
+                Không tìm thấy mã <code class="mono">{{ search_q }}</code> trong danh sách TP có BOM.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>TP đại diện</h2>
+        <div class="meta">6 mã có chain vừa đủ để minh hoạ — click để xem đồ thị.</div>
     </div>
     <div class="grid-3">
         {% for g in gallery %}

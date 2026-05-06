@@ -114,17 +114,30 @@ def bom(slug: str, request: Request, db: Session = Depends(get_db),
         tp: str | None = Query(None)):
     c = get_company_or_404(db, slug)
 
-    # Curated TPs có sẵn data — list từ DB
-    curated_codes = db.scalars(
-        select(BomNode.tp_code)
-        .where(BomNode.company_id == c.id, BomNode.level == 0)
-        .group_by(BomNode.tp_code)
-        .order_by(BomNode.tp_code)
-    ).all()
+    # Tổng quan: số TP có data BOM
+    n_tp_total = db.scalar(
+        select(func.count(func.distinct(BomNode.tp_code)))
+        .where(BomNode.company_id == c.id)
+    ) or 0
+    n_nodes_total = db.scalar(
+        select(func.count()).select_from(BomNode).where(BomNode.company_id == c.id)
+    ) or 0
+    n_edges_total = db.scalar(
+        select(func.count()).select_from(BomEdge).where(BomEdge.company_id == c.id)
+    ) or 0
 
-    # TP gallery: số nodes + edges per TP
+    # 6 TP đại diện cho gallery (chain 2 cấp, vừa đủ — show first-time)
+    featured_codes = ["MGM1139-252", "MEP2554-01US", "MGM1200-406",
+                      "MGM1212-406", "MGM0996-USA", "MGM1036-USA"]
     gallery = []
-    for code in curated_codes:
+    for code in featured_codes:
+        root = db.scalar(
+            select(BomNode).where(
+                BomNode.company_id == c.id, BomNode.tp_code == code, BomNode.level == 0
+            )
+        )
+        if not root:
+            continue
         n_nodes = db.scalar(
             select(func.count()).select_from(BomNode)
             .where(BomNode.company_id == c.id, BomNode.tp_code == code)
@@ -137,21 +150,22 @@ def bom(slug: str, request: Request, db: Session = Depends(get_db),
             select(func.max(BomNode.level))
             .where(BomNode.company_id == c.id, BomNode.tp_code == code)
         ) or 0
-        root = db.scalar(
-            select(BomNode).where(
-                BomNode.company_id == c.id, BomNode.tp_code == code, BomNode.level == 0
-            )
-        )
         gallery.append({
-            "code": code,
-            "description": root.description if root else "",
-            "n_nodes": n_nodes,
-            "n_edges": n_edges,
-            "max_level": max_level,
+            "code": code, "description": root.description or "",
+            "n_nodes": n_nodes, "n_edges": n_edges, "max_level": max_level,
         })
 
-    # Default to first curated if no tp param
-    selected_tp = tp if tp in curated_codes else (curated_codes[0] if curated_codes else None)
+    # Resolve selected TP — accept any TP có trong DB
+    selected_tp = None
+    if tp:
+        exists = db.scalar(
+            select(BomNode.tp_code)
+            .where(BomNode.company_id == c.id, BomNode.tp_code == tp, BomNode.level == 0)
+        )
+        if exists:
+            selected_tp = tp
+    if not selected_tp and gallery:
+        selected_tp = gallery[0]["code"]
 
     nodes = []
     edges = []
@@ -181,11 +195,17 @@ def bom(slug: str, request: Request, db: Session = Depends(get_db),
             for e in edges
         ]
 
+    # Search miss?
+    search_miss = bool(tp and not selected_tp)
+
     return request.app.state.render(
         request, "insights/bom.html",
         company=c, gallery=gallery, selected_tp=selected_tp,
         nodes=nodes, edges=edges,
         nodes_json=nodes_json, edges_json=edges_json,
+        n_tp_total=n_tp_total, n_nodes_total=n_nodes_total,
+        n_edges_total=n_edges_total,
+        search_miss=search_miss, search_q=tp or "",
     )
 
 

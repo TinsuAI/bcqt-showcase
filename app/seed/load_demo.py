@@ -468,7 +468,7 @@ def seed_bom_cycles(db, company: Company) -> None:
 
 
 def seed_curated_bom(db, company: Company) -> None:
-    """Pre-compute đồ thị BOM cho 6 TP curated (chain 2-3 level, 8-15 NVL, không cycle)."""
+    """Pre-compute đồ thị BOM cho TẤT CẢ 517 TP XK (depth 2, width cap 30, cycle-safe)."""
     f = OUT / f"HO_SO_GIAI_TRINH_{VER}.xlsx"
     if not f.exists():
         return
@@ -478,65 +478,75 @@ def seed_curated_bom(db, company: Company) -> None:
     except Exception:
         return
 
-    # 6 TP curated theo phân tích offline
-    curated = ["MGM1139-252", "MEP2554-01US", "MGM1200-406", "MGM1212-406", "MGM0996-USA", "MGM1036-USA"]
+    m15a_path = OUT / f"Mau_15a_SP_{VER}.csv"
+    if not m15a_path.exists():
+        return
+    m15a = pd.read_csv(m15a_path)
+    tp_xk_list = m15a["material"].astype(str).tolist()
 
     desc_map = dict(zip(mc["material"].astype(str), mc["material_description"].fillna("")))
     cat_map = dict(zip(mc["material"].astype(str), mc["final_category"].fillna("")))
+    products_set = set(bd["product"].unique())
 
-    products_set = set(bd["product"].unique())  # những mã có thể là output → là BTP/TP
+    # Cycle materials — không recurse INTO khi gặp (nhưng nếu chính TP là cycle node, vẫn build root)
+    df_cycles = pd.read_excel(f, sheet_name="BOM_Cycles", skiprows=2)
+    cycle_mats: set[str] = set()
+    for _, r in df_cycles.iterrows():
+        v = r.iloc[2] if len(r) > 2 else None
+        if pd.notna(v) and str(v) != "ma_vat_tu":
+            cycle_mats.add(str(v))
 
-    for tp in curated:
-        # Recursive expand depth 3, cycle-safe
-        nodes_seen: dict[str, int] = {}  # mat → level
-        edges = []
+    # Pre-group BOM_Direct theo product để query nhanh
+    by_product: dict[str, pd.DataFrame] = {p: g for p, g in bd.groupby("product")}
 
-        def add_node(mat: str, lvl: int):
-            if mat not in nodes_seen or nodes_seen[mat] > lvl:
-                nodes_seen[mat] = lvl
+    WIDTH_CAP = 30  # tối đa 30 children/node
+    MAX_DEPTH = 2
 
-        def expand(parent: str, lvl: int, max_lvl: int = 2):
-            if lvl > max_lvl:
+    nodes_buf: list[BomNode] = []
+    edges_buf: list[BomEdge] = []
+
+    for tp in tp_xk_list:
+        nodes_seen: dict[str, int] = {tp: 0}
+        edges_local: list[dict] = []
+
+        def expand(parent: str, lvl: int):
+            if lvl > MAX_DEPTH:
                 return
-            children = bd[bd["product"] == parent]
-            for _, r in children.iterrows():
+            children = by_product.get(parent)
+            if children is None or len(children) == 0:
+                return
+            top = children.nlargest(WIDTH_CAP, "norm") if len(children) > WIDTH_CAP else children
+            for _, r in top.iterrows():
                 child = str(r["input_material"])
-                if child == parent or child in nodes_seen:  # cycle/self-loop
+                if child == parent or child in nodes_seen:
                     continue
-                add_node(child, lvl + 1)
-                edges.append({
+                nodes_seen[child] = lvl + 1
+                edges_local.append({
                     "src": parent, "dst": child,
                     "norm": float(r["norm"] or 0),
                     "consumed": float(r["total_consumed"] or 0),
                     "produced": float(r["total_produced"] or 0),
                 })
-                # Recurse only if child is a product (BTP)
-                if child in products_set:
-                    expand(child, lvl + 1, max_lvl)
+                if child in products_set and child not in cycle_mats:
+                    expand(child, lvl + 1)
 
-        add_node(tp, 0)
         expand(tp, 0)
 
         for mat, lvl in nodes_seen.items():
-            db.add(
-                BomNode(
-                    company_id=company.id,
-                    tp_code=tp,
-                    material=mat,
-                    description=desc_map.get(mat) or None,
-                    level=lvl,
-                    category=cat_map.get(mat) or None,
-                )
-            )
-        for e in edges:
-            db.add(
-                BomEdge(
-                    company_id=company.id,
-                    tp_code=tp,
-                    src=e["src"], dst=e["dst"],
-                    norm=e["norm"], consumed=e["consumed"], produced=e["produced"],
-                )
-            )
+            nodes_buf.append(BomNode(
+                company_id=company.id, tp_code=tp, material=mat,
+                description=desc_map.get(mat) or None, level=lvl,
+                category=cat_map.get(mat) or None,
+            ))
+        for e in edges_local:
+            edges_buf.append(BomEdge(
+                company_id=company.id, tp_code=tp,
+                src=e["src"], dst=e["dst"],
+                norm=e["norm"], consumed=e["consumed"], produced=e["produced"],
+            ))
+
+    db.add_all(nodes_buf)
+    db.add_all(edges_buf)
 
 
 def seed_phase_artifacts(db, company: Company) -> None:
