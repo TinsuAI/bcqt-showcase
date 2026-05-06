@@ -1,7 +1,9 @@
 """Trang truy vết NVL + phát hiện rủi ro + nhật ký xử lý + runs + rules."""
 
 from pathlib import Path
+from typing import Any
 
+import yaml
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
@@ -277,34 +279,102 @@ RULE_FILES = [
 ]
 
 
-def _load_yaml_file(key: str) -> tuple[str | None, int]:
-    """Load YAML từ Johnson config dir (read-only)."""
+def _load_yaml_file(key: str) -> tuple[str | None, int, Any]:
+    """Load YAML từ Johnson config dir. Return (text, line_count, parsed_data)."""
     path = Path("/home/vp/workspace/client/Johnson/config") / f"{key}.yaml"
     if not path.exists():
-        return None, 0
+        return None, 0, None
     try:
         text = path.read_text(encoding="utf-8")
     except Exception:
-        return None, 0
-    return text, len(text.splitlines())
+        return None, 0, None
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError:
+        data = None
+    return text, len(text.splitlines()), data
+
+
+def _detect_shape(key: str, data: Any) -> str:
+    """Phân tích shape YAML để render đúng:
+    - codes_table: dict mã → dict thuộc tính (movement_types, customs_types, QD1357)
+    - rules_dict: dict rule → dict (material_classification)
+    - column_map: nested dict với list-of-dicts {col,name,label} (settlement_columns)
+    - status_groups: 3 nhóm resolved/pending/noise_confirmed (known_issues)
+    - generic: fallback recursive tree
+    """
+    if not isinstance(data, dict) or not data:
+        return "generic"
+
+    if key in ("movement_types", "customs_types"):
+        return "codes_table"
+    if key == "QD1357_reference":
+        return "codes_grouped"
+    if key == "material_classification":
+        return "classification"
+    if key == "settlement_columns":
+        return "column_map"
+    if key == "known_issues_2025":
+        return "status_groups"
+    return "generic"
+
+
+def _yaml_to_codes_rows(data: dict) -> list[dict]:
+    """Convert dict mã → dict thuộc tính → list rows phẳng."""
+    rows = []
+    for code, props in data.items():
+        if not isinstance(props, dict):
+            continue
+        rows.append({"code": str(code), **props})
+    return rows
+
+
+def _yaml_to_codes_grouped(data: dict) -> dict[str, list[dict]]:
+    """QD1357: group theo field 'group' (EXPORT/IMPORT)."""
+    groups: dict[str, list[dict]] = {}
+    for code, props in data.items():
+        if not isinstance(props, dict):
+            continue
+        g = str(props.get("group", "OTHER"))
+        groups.setdefault(g, []).append({"code": str(code), **props})
+    return groups
 
 
 @router.get("/rules")
 def rules(slug: str, request: Request, db: Session = Depends(get_db),
-          file: str | None = Query(None)):
+          file: str | None = Query(None), view: str = Query("table")):
     c = get_company_or_404(db, slug)
     selected = None
     yaml_text = None
     line_count = 0
+    data = None
+    shape = "generic"
+    rendered: dict[str, Any] = {}
+
     if file:
         for r in RULE_FILES:
             if r["key"] == file:
                 selected = r
                 break
         if selected:
-            yaml_text, line_count = _load_yaml_file(file)
+            yaml_text, line_count, data = _load_yaml_file(file)
+            shape = _detect_shape(file, data)
+            if shape == "codes_table":
+                rendered["rows"] = _yaml_to_codes_rows(data)
+            elif shape == "codes_grouped":
+                rendered["groups"] = _yaml_to_codes_grouped(data)
+            elif shape == "classification":
+                rendered["rules"] = (data or {}).get("rules", {})
+                rendered["type_fallback"] = (data or {}).get("type_fallback", {})
+            elif shape == "column_map":
+                # data shape: { mau15: { bcqt_columns: [...], working_columns: [...] }, mau15a: ..., mau16: ... }
+                rendered["sections"] = data or {}
+            elif shape == "status_groups":
+                rendered["groups"] = data or {}
+
     return request.app.state.render(
         request, "insights/rules.html",
         company=c, files=RULE_FILES,
         selected=selected, yaml_text=yaml_text, line_count=line_count,
+        shape=shape, view=view, rendered=rendered, data=data,
     )

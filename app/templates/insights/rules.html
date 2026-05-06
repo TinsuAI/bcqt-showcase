@@ -5,17 +5,54 @@
 <span class="sep">/</span><span class="here">Quy tắc xử lý</span>
 {% endblock %}
 
+{% macro direction_badge(d) %}
+{% set s = (d or "")|string|upper %}
+{% if s == "IMPORT" or s == "INBOUND" %}<span class="badge info">{{ s }}</span>
+{% elif s == "EXPORT" or s == "OUTBOUND" %}<span class="badge success">{{ s }}</span>
+{% elif s == "TRANSFER" %}<span class="badge warning">{{ s }}</span>
+{% else %}<span class="badge neutral">{{ s or "—" }}</span>{% endif %}
+{% endmacro %}
+
+{% macro bool_badge(v) %}
+{% if v is sameas true %}<span class="badge success">Có</span>
+{% elif v is sameas false %}<span class="badge neutral">Không</span>
+{% else %}<span class="muted small">—</span>{% endif %}
+{% endmacro %}
+
+{% macro render_value(v) %}
+{% if v is mapping %}
+  <table class="data kv-mini">
+    <tbody>
+    {% for k, vv in v.items() %}
+      <tr><th class="mono small">{{ k }}</th><td>{{ render_value(vv) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% elif v is iterable and v is not string %}
+  {% if v|length == 0 %}<span class="muted small">[trống]</span>
+  {% else %}
+    <ul class="kv-list">
+    {% for item in v %}<li>{{ render_value(item) }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+{% elif v is sameas true %}<span class="badge success">Có</span>
+{% elif v is sameas false %}<span class="badge neutral">Không</span>
+{% elif v is none %}<span class="muted small">—</span>
+{% else %}<span class="mono small">{{ v }}</span>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
 <div class="page-head">
     <div class="page-head-row">
         <div>
-            <h1>Quy tắc xử lý (read-only)</h1>
+            <h1>Quy tắc xử lý</h1>
             <div class="meta">
-                Tất cả quy tắc nghiệp vụ pipeline đang áp dụng được lưu thành YAML versioned. Không cho edit qua UI — đảm bảo tính đối chiếu khi thanh tra.
+                Mọi quy tắc nghiệp vụ pipeline đang áp dụng được lưu thành cấu hình có phiên bản (YAML). Xem chỉ — không cho sửa qua giao diện để đảm bảo có thể đối chiếu khi thanh tra.
             </div>
         </div>
         <div class="page-actions">
-            <span class="badge neutral">{{ files | length }} file</span>
+            <span class="badge neutral">{{ files | length }} bộ quy tắc</span>
         </div>
     </div>
 </div>
@@ -24,13 +61,19 @@
     <div class="grid-12">
         <div class="panel">
             <div class="panel-head">
-                <h3>{% if selected %}{{ selected.title }}{% else %}Chọn file để xem{% endif %}</h3>
+                <h3>{% if selected %}{{ selected.title }}{% else %}Chọn bộ quy tắc{% endif %}</h3>
                 {% if selected %}
-                <span class="meta mono">{{ selected.key }}.yaml{% if line_count %} · {{ line_count }} dòng{% endif %}</span>
+                <div class="row" style="gap: 6px;">
+                    <a class="tab {% if view != 'raw' %}active{% endif %}" href="?file={{ selected.key }}&view=table">Bảng</a>
+                    <a class="tab {% if view == 'raw' %}active{% endif %}" href="?file={{ selected.key }}&view=raw">YAML gốc{% if line_count %} ({{ line_count }}){% endif %}</a>
+                </div>
                 {% endif %}
             </div>
             <div class="panel-body">
-                {% if selected %}
+                {% if not selected %}
+                <div class="no-data">Chọn 1 bộ quy tắc ở danh sách bên phải để xem nội dung.</div>
+
+                {% elif view == "raw" %}
                 <div class="row" style="gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
                     <span class="badge primary mono">{{ selected.phase }}</span>
                     {% if selected.regulation %}<span class="badge neutral">{{ selected.regulation }}</span>{% endif %}
@@ -39,17 +82,176 @@
                 {% if yaml_text %}
                 <pre class="yaml-view"><code>{{ yaml_text }}</code></pre>
                 {% else %}
-                <div class="no-data">Không đọc được file YAML.</div>
+                <div class="no-data">Không đọc được file.</div>
                 {% endif %}
+
                 {% else %}
-                <div class="no-data">Chọn 1 file ở danh sách bên phải để xem nội dung.</div>
+                <div class="row" style="gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <span class="badge primary mono">{{ selected.phase }}</span>
+                    {% if selected.regulation %}<span class="badge neutral">{{ selected.regulation }}</span>{% endif %}
+                </div>
+                <p class="small muted" style="margin-bottom: 14px;">{{ selected.subtitle }}</p>
+
+                {# ───────── codes_table: movement_types, customs_types ───────── #}
+                {% if shape == "codes_table" %}
+                <div class="table-wrap">
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>Mã</th>
+                                <th>Hướng</th>
+                                {% if selected.key == "movement_types" %}
+                                <th>Là đảo bút toán?</th>
+                                <th>Ảnh hưởng kho?</th>
+                                <th>Vào BCQT?</th>
+                                {% endif %}
+                                <th>Mô tả</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in rendered.rows %}
+                            <tr>
+                                <td class="mono"><strong>{{ r.code }}</strong></td>
+                                <td>{{ direction_badge(r.direction) }}</td>
+                                {% if selected.key == "movement_types" %}
+                                <td>{{ bool_badge(r.is_reversal) }}</td>
+                                <td>{{ bool_badge(r.affects_physical) }}</td>
+                                <td>{{ bool_badge(r.customs_relevant) }}</td>
+                                {% endif %}
+                                <td class="small">{{ r.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="tiny muted" style="margin-top: 8px;">{{ rendered.rows | length }} mã.</p>
+
+                {# ───────── codes_grouped: QD1357 ───────── #}
+                {% elif shape == "codes_grouped" %}
+                {% for group, items in rendered.groups.items() %}
+                <h4 style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin: {% if loop.first %}0{% else %}22px{% endif %} 0 8px; color: var(--foreground-soft);">
+                    {% if group == "EXPORT" %}<span class="badge success">{{ group }}</span> Xuất khẩu
+                    {% elif group == "IMPORT" %}<span class="badge info">{{ group }}</span> Nhập khẩu
+                    {% else %}{{ group }}{% endif %}
+                    <span class="muted tiny" style="margin-left: 8px; font-weight: 400;">— {{ items | length }} mã</span>
+                </h4>
+                <div class="table-wrap">
+                    <table class="data">
+                        <thead><tr><th>Mã</th><th>Tên loại hình</th><th>Mô tả</th></tr></thead>
+                        <tbody>
+                            {% for r in items %}
+                            <tr>
+                                <td class="mono"><strong>{{ r.code }}</strong></td>
+                                <td>{{ r.name }}</td>
+                                <td class="small">{{ r.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+
+                {# ───────── classification: GL → category ───────── #}
+                {% elif shape == "classification" %}
+                <h4 class="rule-h">Theo TK kế toán</h4>
+                <div class="table-wrap">
+                    <table class="data">
+                        <thead><tr><th>TK kế toán</th><th>Material Type kỳ vọng</th><th>Phân loại</th></tr></thead>
+                        <tbody>
+                            {% for gl, info in rendered.rules.items() %}
+                            <tr>
+                                <td class="mono"><strong>{{ gl }}</strong></td>
+                                <td><span class="badge neutral">{{ info.expected_type }}</span></td>
+                                <td><span class="badge primary">{{ info.category }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <h4 class="rule-h" style="margin-top: 22px;">Fallback theo Material Type SAP</h4>
+                <p class="tiny muted" style="margin-bottom: 8px;">Áp dụng khi mã không có TK kế toán hoặc không tồn tại trong MB5B.</p>
+                <div class="table-wrap">
+                    <table class="data">
+                        <thead><tr><th>Material Type</th><th>Phân loại</th></tr></thead>
+                        <tbody>
+                            {% for mt, cat in rendered.type_fallback.items() %}
+                            <tr><td class="mono">{{ mt }}</td><td><span class="badge primary">{{ cat }}</span></td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {# ───────── column_map: settlement_columns ───────── #}
+                {% elif shape == "column_map" %}
+                {% for sec_name, sec in rendered.sections.items() %}
+                <h4 class="rule-h" style="margin-top: {% if loop.first %}0{% else %}22px{% endif %};">
+                    Mẫu {{ sec_name | replace("mau", "") }}
+                </h4>
+                {% for sub_key, items in sec.items() %}
+                <div class="tiny muted" style="margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+                    {% if sub_key == "bcqt_columns" %}Cột nộp HQ
+                    {% elif sub_key == "working_columns" %}Cột bảng tính nội bộ
+                    {% else %}{{ sub_key | replace("_", " ") | capitalize }}{% endif %}
+                </div>
+                <div class="table-wrap">
+                    <table class="data">
+                        <thead><tr><th>Cột</th><th>Tên kỹ thuật</th><th>Nhãn hiển thị</th></tr></thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td class="mono"><strong>{{ item.col }}</strong></td>
+                                <td class="mono small">{{ item.name }}</td>
+                                <td class="small">{{ item.label }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+                {% endfor %}
+
+                {# ───────── status_groups: known issues ───────── #}
+                {% elif shape == "status_groups" %}
+                {% for grp_name, grp in rendered.groups.items() %}
+                <h4 class="rule-h" style="margin-top: {% if loop.first %}0{% else %}22px{% endif %};">
+                    {% if grp_name == "resolved" %}<span class="badge success">Đã xử lý</span>
+                    {% elif grp_name == "pending" %}<span class="badge warning">Đang xử lý</span>
+                    {% elif grp_name == "noise_confirmed" %}<span class="badge neutral">Bỏ qua (nhiễu đã xác nhận)</span>
+                    {% else %}{{ grp_name }}{% endif %}
+                    <span class="muted tiny" style="margin-left: 8px; font-weight: 400;">— {{ grp | length }} mục</span>
+                </h4>
+                <div class="stack-sm">
+                {% for issue_id, issue in grp.items() %}
+                  <div class="panel" style="background: var(--card-muted);">
+                      <div class="panel-head">
+                          <h3 class="mono small">{{ issue_id }}</h3>
+                          {% if issue.question_id %}<span class="badge primary mono tiny">{{ issue.question_id }}</span>{% endif %}
+                      </div>
+                      <div class="panel-body" style="padding: 10px 14px;">
+                          {% for k, v in issue.items() if k != "question_id" %}
+                          <div class="row" style="gap: 8px; align-items: flex-start; padding: 3px 0;">
+                              <span class="tiny muted mono" style="flex: 0 0 110px; padding-top: 2px;">{{ k }}</span>
+                              <div style="flex: 1; min-width: 0;">{{ render_value(v) }}</div>
+                          </div>
+                          {% endfor %}
+                      </div>
+                  </div>
+                {% endfor %}
+                </div>
+                {% endfor %}
+
+                {# ───────── generic fallback ───────── #}
+                {% else %}
+                {{ render_value(data) }}
+                {% endif %}
+
                 {% endif %}
             </div>
         </div>
 
         <aside>
             <div class="panel">
-                <div class="panel-head"><h3>Files quy tắc</h3></div>
+                <div class="panel-head"><h3>Bộ quy tắc</h3></div>
                 <div class="panel-body dense">
                     {% for f in files %}
                     <a class="row-line" href="/c/{{ company.slug }}/rules?file={{ f.key }}" style="align-items: flex-start; padding: 10px 14px;">

@@ -703,6 +703,32 @@ table.data tr.row-link { cursor: pointer; }
 }
 .yaml-view code { white-space: pre; }
 
+/* Rule-friendly view (parsed) */
+.rule-h {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin: 0 0 8px;
+    color: var(--foreground-soft);
+}
+.kv-mini {
+    width: 100%; font-size: 12px;
+    background: transparent;
+}
+.kv-mini th {
+    text-align: left; font-weight: 500; color: var(--foreground-muted);
+    padding: 3px 8px 3px 0; vertical-align: top;
+    background: transparent; border: 0; text-transform: none; letter-spacing: 0;
+}
+.kv-mini td {
+    padding: 3px 0; border: 0;
+}
+.kv-list {
+    list-style: disc inside;
+    padding-left: 4px;
+    margin: 0;
+}
+.kv-list li { padding: 1px 0; }
+
 /* Hide rail on small */
 @media (max-width: 880px) {
     .app { grid-template-columns: 1fr; }
