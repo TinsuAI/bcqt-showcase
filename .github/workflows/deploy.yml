@@ -1,0 +1,59 @@
+name: Deploy to TINSU
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to deploy (e.g. v0.1.0, latest, main)"
+        required: true
+        default: "latest"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TINSU_SSH_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.TINSU_SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy compose file
+        run: |
+          scp docker-compose.yml ${{ secrets.TINSU_SSH_USER }}@${{ secrets.TINSU_SSH_HOST }}:${{ secrets.TINSU_DEPLOY_PATH }}/docker-compose.yml
+
+      - name: Deploy
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          ssh ${{ secrets.TINSU_SSH_USER }}@${{ secrets.TINSU_SSH_HOST }} bash -s <<EOF
+            set -euo pipefail
+            cd ${{ secrets.TINSU_DEPLOY_PATH }}
+            export IMAGE_TAG="${IMAGE_TAG}"
+            export HOST_PORT="${{ secrets.TINSU_HOST_PORT }}"
+            export SECRET_KEY="${{ secrets.TINSU_SECRET_KEY }}"
+            echo "${{ secrets.GHCR_PULL_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_PULL_USER }} --password-stdin
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker compose ps
+            sleep 5
+            docker compose logs --tail=40 app
+          EOF
