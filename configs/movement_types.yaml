@@ -1,0 +1,157 @@
+# SAP Movement Type Classification
+# Nguồn: docs/GiaiThichMovement.md + xác nhận từ Johnson
+#
+# Fields:
+#   direction: INBOUND | OUTBOUND | TRANSFER
+#   is_reversal: true/false
+#   affects_physical: true/false
+#   customs_relevant: true/false — included in BCQT (báo cáo quyết toán)
+#   description: English (Vietnamese note)
+
+101:
+  direction: INBOUND
+  is_reversal: false
+  affects_physical: true
+  customs_relevant: true
+  description: "Goods receipt from PO/production/project (Nhập kho từ PO/SX)"
+
+102:
+  direction: INBOUND
+  is_reversal: true
+  affects_physical: true
+  customs_relevant: true
+  description: "Reversal of 101"
+
+122:
+  direction: OUTBOUND
+  is_reversal: false
+  affects_physical: true
+  customs_relevant: true
+  description: "Return to vendor (Trả hàng NCC)"
+
+123:
+  direction: OUTBOUND
+  is_reversal: true
+  affects_physical: true
+  customs_relevant: true
+  description: "Reversal of 122"
+
+201:
+  direction: OUTBOUND
+  is_reversal: false
+  affects_physical: true
+  customs_relevant: false
+  description: "Issue to cost center (Xuất cho cost center — nội bộ, không BCQT)"
+
+202:
+  direction: OUTBOUND
+  is_reversal: true
+  affects_physical: true
+  customs_relevant: false
+  description: "Reversal of 201"
+
+261:
+  direction: OUTBOUND
+  is_reversal: false
+  affects_physical: true
+  customs_relevant: true
+  description: "Issue to production/project order (Xuất cho lệnh SX)"
+
+262:
+  direction: OUTBOUND
+  is_reversal: true
+  affects_physical: true
+  customs_relevant: true
+  description: "Reversal of 261"
+
+301:
+  direction: TRANSFER
+  is_reversal: false
+  affects_physical: false
+  customs_relevant: false
+  description: "Inter-plant transfer (Chuyển kho liên nhà máy)"
+
+311:
+  direction: TRANSFER
+  is_reversal: false
+  affects_physical: false
+  customs_relevant: false
+  description: "Intra-plant transfer (Chuyển kho nội bộ)"
+
+321:
+  direction: TRANSFER
+  is_reversal: false
+  affects_physical: false
+  customs_relevant: false
+  description: "Quality to unrestricted (Chuyển từ QC sang tự do)"
+
+411:
+  direction: TRANSFER
+  is_reversal: false
+  affects_physical: false
+  customs_relevant: false
+  description: "Storage location transfer (Chuyển vị trí lưu kho)"
+
+412:
+  direction: TRANSFER
+  is_reversal: true
+  affects_physical: false
+  customs_relevant: false
+  description: "Reversal of 411"
+
+413:
+  direction: TRANSFER
+  is_reversal: false
+  affects_physical: false
+  customs_relevant: false
+  description: "Project to sales order transfer"
+
+415:
+  direction: TRANSFER
+  is_reversal: false
+  affects_physical: false
+  customs_relevant: false
+  description: "Project to project transfer"
+
+416:
+  direction: TRANSFER
+  is_reversal: true
+  affects_physical: false
+  customs_relevant: false
+  description: "Reversal of 415"
+
+901:
+  direction: OUTBOUND
+  is_reversal: false
+  affects_physical: true
+  customs_relevant: true
+  description: "Goods issue for delivery — export (Xuất kho giao hàng XK)"
+
+902:
+  direction: OUTBOUND
+  is_reversal: true
+  affects_physical: true
+  customs_relevant: true
+  description: "Reversal of 901"
+
+903:
+  direction: OUTBOUND
+  is_reversal: false
+  affects_physical: true
+  customs_relevant: true
+  description: "Goods issue for delivery — domestic (Xuất kho giao hàng nội địa)"
+
+# ── Added for Q1 2026 data (new MvTs not seen in 2025) ──
+312:
+  direction: TRANSFER
+  is_reversal: true
+  affects_physical: false
+  customs_relevant: false
+  description: "Reversal of 311 — intra-plant transfer cancellation (Huỷ chuyển kho nội bộ)"
+
+543:
+  direction: OUTBOUND
+  is_reversal: false
+  affects_physical: true
+  customs_relevant: false
+  description: "GI issue project stock (Xuất tiêu thụ tồn kho dự án) — cần Johnson xác nhận customs_relevant"

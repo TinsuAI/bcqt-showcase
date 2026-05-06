@@ -1,0 +1,131 @@
+# Settlement Override Configuration
+# Used by generate_settlement.py Phase 5
+# Source: Johnson feedback 19-20/03/2026
+
+# --- Material reclassification overrides ---
+# Applied AFTER baseline ENRICHED classification
+# Order matters: later layers override earlier ones
+
+reclassification:
+  # Layer 1: 103 BTP_NM → BTP_SX (no PO, no HQ, has production orders)
+  # Source: PHAN_LOAI kieu_mau_thuan == "BTP_NM → BTP_SX" + nhom_nguon_goc == "TU_SAN_XUAT"
+  # These are loaded from PHAN_LOAI file dynamically
+
+  # Layer 5: 2 BTP_SX → TP (have export MvT 901/902)
+  btp_sx_to_tp:
+    - MFW0502-571IN
+    - MPL0101-39IN
+
+  # Layer 6 (Q5): 8 NVL/HALB with production → BTP_SX
+  # Source: PHAN_LOAI kieu_mau_thuan == "NVL → BTP_SX"
+  # Loaded dynamically from PHAN_LOAI
+
+# --- T02 treatment rules ---
+# Maps Johnson's "Phân loại" categories to import qty source
+# Johnson final round (2026-03-28): TẤT CẢ → HQ
+t02_rules:
+  # Category → {source: HQ, flag: optional note}
+  "vật liệu thử khuôn.":
+    source: HQ
+    flag: ""
+  "Dữ liệu không có vấn đề":
+    source: HQ
+    flag: ""
+  "Đã nhập kho nhưng chưa khai báo":
+    source: HQ
+    flag: ""
+  "bù sản phẩm lỗi":
+    source: HQ
+    flag: ""
+  "Đã khai báo hải quan nhưng chưa nhập sổ":
+    source: HQ
+    flag: ""
+  "Chênh lệch số lượng":
+    source: HQ
+    flag: ""
+  "Khí thiếu giấy tờ":
+    source: HQ
+    flag: ""
+  "do quy đổi đơn vị. để theo đơn vị của hải quan":
+    source: HQ
+    flag: "Đã quy đổi"
+
+# --- Tồn cuối adjustment rules ---
+# Khi nhập = HQ mà HQ ≠ SAP, tồn cuối điều chỉnh: MB5B + (nhập_HQ - nhập_SAP)
+# Mode per T02 category:
+#   "adjust_ton": tồn = MB5B + (nhập_HQ - nhập_SAP)
+#   "ton_equals_nhap": tồn = nhập_HQ (thử khuôn, SAP=0, MB5B=0)
+#   "keep": giữ nguyên MB5B/source_tracking (default)
+ton_cuoi_rules:
+  default: "keep"
+  dual_source: "keep"  # FIFO source_tracking, không đổi
+  t02_overrides:
+    "vật liệu thử khuôn.": "ton_equals_nhap"
+    "Đã khai báo hải quan nhưng chưa nhập sổ": "adjust_ton"
+    "Khí thiếu giấy tờ": "adjust_ton"
+    "bù sản phẩm lỗi": "adjust_ton"
+    "do quy đổi đơn vị. để theo đơn vị của hải quan": "adjust_ton"
+    "Đã nhập kho nhưng chưa khai báo": "adjust_ton"
+    "Dữ liệu không có vấn đề": "adjust_ton"
+    "Chênh lệch số lượng": "adjust_ton"
+
+# --- UOM conversion (Q1: 3 mã chênh đơn vị) ---
+# HQ dùng đơn vị khác SAP. BCQT dùng đơn vị hải quan.
+# Code quy đổi SAP (MB51, MB5B) → HQ unit. Số HQ giữ nguyên.
+# factor: HQ × factor = SAP (trừ khi inverse: HQ ÷ factor = SAP)
+uom_conversions:
+  K60000201:
+    factor: 1000       # HQ: 6 MT → SAP: 6,000 KG
+    hq_unit: MT
+    sap_unit: KG
+    note: "1 MT = 1,000 KG"
+  K60000900:
+    factor: 1000       # HQ: 60 MT → SAP: 60,000 EA (dây hàn, 1 MT ≈ 1,000 sợi)
+    hq_unit: MT
+    sap_unit: EA
+    note: "1 MT = 1,000 EA (dây hàn)"
+  "1000459277":
+    factor: 1000       # HQ: 20,000 M → SAP: 20 EA (cuộn 1,000m/cuộn)
+    hq_unit: M
+    sap_unit: EA
+    note: "1 EA = 1,000 M (魔線 1000公尺/捲)"
+    inverse: true      # HQ ÷ factor = SAP unit (metres → cuộn)
+
+# --- Source configuration ---
+# Cấu hình nguồn số liệu và phương pháp phân bổ cho M15/M15a.
+# Thay đổi ở đây → thay đổi cách tính, không cần sửa code.
+source_config:
+  # Phát hiện dual-source (NVL vừa nhập khẩu vừa tự sản xuất)
+  #   prod_receipt: có production receipt (MvT 101 order, no PO) → dual
+  #   fifo_cap: chỉ khi consumption > HQ available → dual
+  dual_source_detect: "prod_receipt"
+
+  # Phân bổ phế liệu (scrap MvT 201/202) cho dual-source
+  #   source_tracking: HQ trước, dư → non-HQ (TT 38 Đ60 ưu tiên 1)
+  #   proportional: chia theo tỷ lệ nhập HQ vs tự SX
+  scrap_allocation: "source_tracking"
+
+  # Tồn cuối kỳ M15
+  #   auto: source_tracking cho dual-source (chỉ phần HQ), MB5B cho single-source
+  #   mb5b: luôn dùng MB5B closing (tổng, lẫn HQ + non-HQ)
+  #   balance: luôn dùng balance equation
+  m15_ton_cuoi: "auto"
+
+  # BOM flatten dual-source split (Mẫu 16)
+  #   source_tracking: dùng HQ trước trong BOM flatten (TT 38 Đ60)
+  #   (chỉ source_tracking được hỗ trợ hiện tại)
+  bom_dual_source_split: "source_tracking"
+
+  # Tồn cuối kỳ M15a
+  #   mb5b: MB5B closing (sổ sách)
+  #   balance: balance equation (nhập SX - xuất khẩu - xuất khác)
+  m15a_ton_cuoi: "mb5b"
+
+# --- E13 treatment ---
+# ~303 materials declared E13 but used in production (MvT 261)
+# Treatment: add E13 import qty to nhap_trong_ky only.
+# xuat_sx comes from SAP MvT 261 which already includes E13 consumption.
+# Adding E13 to xuat_sx would double-count.
+e13_treatment:
+  add_to_nhap: true
+  add_to_xuat_sx: false

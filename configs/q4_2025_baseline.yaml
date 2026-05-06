@@ -1,0 +1,51 @@
+period:
+  start: '2025-10-01'
+  end: '2025-12-31'
+  months: 3
+macro:
+  sap_import_vnd_total: 187133392787.0
+  sap_import_vnd_per_month: 62377797595.666664
+  sap_export_vnd_total: 130725095408.0
+  sap_export_vnd_per_month: 43575031802.666664
+  hq_import_vnd_total: 208712672418.61078
+  hq_import_vnd_per_month: 69570890806.2036
+  hq_export_vnd_total: 160064868729.76868
+  hq_export_vnd_per_month: 53354956243.256226
+  declarations_total: 1029
+  declarations_per_month: 343.0
+  active_materials_total: 5114
+mvt_mix_pct:
+  '261': 56.675
+  '101': 24.446
+  '321': 10.266
+  '262': 2.924
+  '412': 2.24
+  '411': 1.167
+  '901': 1.071
+  '311': 0.878
+  '102': 0.154
+  '122': 0.076
+  '415': 0.03
+  '902': 0.028
+  '413': 0.011
+  '903': 0.01
+  '416': 0.009
+  '201': 0.008
+  '123': 0.004
+  '301': 0.003
+customs_type_mix_pct:
+  E11: 74.029
+  E15: 13.281
+  E42: 8.922
+  E13: 3.497
+  B11: 0.15
+  G13: 0.117
+  G12: 0.005
+mvt_122_pattern:
+  total_rows: 141
+  unique_days: 24
+  max_daily_rows: 23
+  max_daily_concentration_pct: 16.31
+  top_3_po_share_pct: 85.04
+  ratio_122_over_101_with_po: 0.0057
+computed_at: '2026-04-19T21:02:00.862253'

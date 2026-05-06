@@ -1,0 +1,79 @@
+# Settlement Column Definitions
+# Used for: documentation, export selection, validation
+# NOT used for: runtime logic (that's in Python decision functions)
+
+mau15:
+  bcqt_columns:
+    - {col: 5, name: ton_dau_ky, label: "Tồn đầu kỳ"}
+    - {col: 6, name: nhap_trong_ky, label: "Nhập trong kỳ"}
+    - {col: 7, name: xuat_tra_lai, label: "Tái xuất/Trả lại"}
+    - {col: 8, name: xuat_sx, label: "Xuất để SX hàng XK"}
+    - {col: 9, name: chuyen_mdsd, label: "Chuyển MĐSD"}
+    - {col: 10, name: xuat_khac, label: "Xuất kho khác"}
+    - {col: 11, name: ton_cuoi_ky, label: "Tồn cuối kỳ"}
+  working_columns:
+    - {col: "B", name: stt, label: "STT"}
+    - {col: "C", name: material, label: "Mã nội bộ"}
+    - {col: "D", name: hq_material_code, label: "Mã HQ"}
+    - {col: "E", name: material_description, label: "Tên kế toán"}
+    - {col: "F", name: hq_goods_description, label: "Tên HQ"}
+    - {col: "G", name: dvt, label: "ĐVT kế toán"}
+    - {col: "H", name: hq_qty_unit, label: "ĐVT HQ"}
+    - {col: "I", name: ton_dau_ky, label: "Tồn đầu kỳ"}
+    - {col: "J", name: nhap_e11_e15, label: "Nhập E11/E15"}
+    - {col: "K", name: nhap_loai_hinh_khac, label: "Nhập loại hình khác"}
+    - {col: "L", name: nhap_hang_di_duong, label: "Hàng đi đường"}
+    - {col: "M", name: nhap_nguon_khac, label: "Nhập nguồn khác"}
+    - {col: "N", name: nhap_lai_tu_sx, label: "Nhập lại từ SX"}
+    - {col: "O", name: nhap_trong_ky, label: "Tổng nhập"}
+    - {col: "P", name: xuat_tra_lai, label: "Tái xuất"}
+    - {col: "Q", name: chuyen_mdsd, label: "Chuyển MĐSD"}
+    - {col: "R", name: xuat_don_linh_lieu, label: "Xuất đơn lĩnh liệu"}
+    - {col: "S", name: xuat_sx_khac, label: "Xuất SX khác"}
+    - {col: "T", name: xuat_sx, label: "Tổng xuất SX"}
+    - {col: "U", name: xuat_khac, label: "Xuất kho khác"}
+    - {col: "V", name: ton_ly_thuyet, label: "Tồn lý thuyết"}
+    - {col: "W", name: ton_so_sach, label: "Tồn sổ sách"}
+    - {col: "X", name: ton_kiem_ke, label: "Kiểm kê"}
+    - {col: "Y", name: ghi_chu, label: "Ghi chú"}
+
+mau15a:
+  bcqt_columns:
+    - {col: 5, name: ton_dau_ky, label: "Tồn đầu kỳ"}
+    - {col: 6, name: nhap_kho_trong_ky, label: "Nhập kho trong kỳ"}
+    - {col: 7, name: chuyen_mdsd, label: "Chuyển MĐSD"}
+    - {col: 8, name: xuat_khau, label: "Xuất khẩu"}
+    - {col: 9, name: xuat_khac, label: "Xuất kho khác"}
+    - {col: 10, name: ton_cuoi_ky, label: "Tồn cuối kỳ"}
+  working_columns:
+    - {col: "A", name: stt, label: "STT"}
+    - {col: "B", name: material, label: "Mã nội bộ"}
+    - {col: "C", name: hq_material_code, label: "Mã HQ"}
+    - {col: "D", name: material_description, label: "Tên kế toán"}
+    - {col: "E", name: hq_goods_description, label: "Tên HQ"}
+    - {col: "F", name: dvt, label: "ĐVT kế toán"}
+    - {col: "G", name: hq_qty_unit, label: "ĐVT HQ"}
+    - {col: "H", name: ton_dau_ky, label: "Tồn đầu kỳ"}
+    - {col: "I", name: nhap_tu_sx, label: "Nhập từ SX"}
+    - {col: "J", name: nhap_nk_mau, label: "Nhập NK mẫu"}
+    - {col: "K", name: nhap_sua_chua, label: "Nhập sửa chữa"}
+    - {col: "L", name: nhap_tai_nhap, label: "Tái nhập"}
+    - {col: "M", name: nhap_kho_trong_ky, label: "Tổng nhập"}
+    - {col: "N", name: chuyen_mdsd, label: "Chuyển MĐSD"}
+    - {col: "O", name: xuat_khau, label: "Xuất E42"}
+    - {col: "P", name: xuat_khac, label: "Xuất kho khác"}
+    - {col: "Q", name: ton_ly_thuyet, label: "Tồn lý thuyết"}
+    - {col: "R", name: ton_thuc_te, label: "Tồn thực tế"}
+    - {col: "S", name: ghi_chu, label: "Ghi chú"}
+
+mau16:
+  bcqt_columns:
+    - {col: 1, name: stt, label: "STT"}
+    - {col: 2, name: ma_sp_xk, label: "Mã SP XK"}
+    - {col: 3, name: ten_sp_xk, label: "Tên SP XK"}
+    - {col: 4, name: dvt_sp, label: "ĐVT SP"}
+    - {col: 5, name: ma_nvl, label: "Mã NVL"}
+    - {col: 6, name: ten_nvl, label: "Tên NVL"}
+    - {col: 7, name: dvt_nvl, label: "ĐVT NVL"}
+    - {col: 8, name: dinh_muc_thuc_te, label: "Định mức thực tế"}
+    - {col: 9, name: ghi_chu, label: "Ghi chú (X=E15 nội địa)"}

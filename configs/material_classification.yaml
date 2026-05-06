@@ -1,0 +1,31 @@
+# Material classification rules: GL account + Material Type → category
+#
+# Used by process_material_master.py to classify each material.
+# GL accounts are from MB5B (inventory accounts 12xxx).
+# Material types are from Sheet3 Material Master.
+
+# GL account → expected material type and category
+rules:
+  12150000:
+    expected_type: ROH
+    category: NVL
+  12130000:
+    expected_type: HALB
+    category: BTP_SX
+  12130003:
+    expected_type: HALB
+    category: BTP_NM
+  12110000:
+    expected_type: FERT
+    category: TP
+  12200002:
+    expected_type: ZCON
+    category: CCDC
+
+# Standalone material_type fallback (for materials not in MB5B / no GL account)
+type_fallback:
+  ROH: NVL
+  HALB: BTP_SX
+  FERT: TP
+  ZCON: CCDC
+  OUSP: UNKNOWN

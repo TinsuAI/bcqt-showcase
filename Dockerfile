@@ -25,6 +25,7 @@ RUN pip install --upgrade pip wheel \
 
 # App code
 COPY app ./app
+COPY configs ./configs
 COPY pyproject.toml ./
 
 # Non-root user

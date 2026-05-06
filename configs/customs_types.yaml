@@ -1,0 +1,39 @@
+# Customs Declaration Type Codes (Mã loại hình)
+# Nguồn: QĐ 1357 + xác nhận từ Johnson
+#
+# Fields:
+#   direction: IMPORT | EXPORT
+#   description: English (Vietnamese note)
+
+E11:
+  direction: IMPORT
+  description: "Import raw materials for export production (Nhập NVL để SXXK)"
+
+E13:
+  direction: IMPORT
+  description: "Import machinery/equipment for export production (Nhập máy móc để SXXK)"
+
+E15:
+  direction: IMPORT
+  description: "Import domestic raw materials for export production (Nhập NVL từ nội địa để SXXK)"
+
+E42:
+  direction: EXPORT
+  description: "Export finished goods from bonded manufacturer (Xuất sản phẩm của DNCX)"
+
+B11:
+  direction: EXPORT
+  description: "Commercial export / scrap sales (Xuất kinh doanh — phế liệu DNCX)"
+
+G12:
+  direction: IMPORT
+  description: "Temporary import of machinery for projects (Tạm nhập máy móc cho dự án có thời hạn)"
+
+G13:
+  direction: IMPORT
+  description: "Tax-exempt temporary import (Tạm nhập miễn thuế)"
+
+# ── Added for Q1 2026 data (QĐ 1357) ──
+G22:
+  direction: EXPORT
+  description: "Re-export of temporarily-imported machinery (Tái xuất máy móc, thiết bị đã tạm nhập)"

@@ -1,0 +1,283 @@
+# Known Issues from 2025 Settlement — for Q1 2026 Audit Differential
+#
+# 3 trạng thái:
+#   resolved        — đã apply fix trong config/code hoặc Johnson đã trả lời
+#   pending         — chưa resolve, cần monitor regression
+#   noise_confirmed — đã investigate và kết luận không phải lỗi, auto-dismiss
+#
+# Sources: Phase 3 audit, Phase 4.1-4.4 investigation, T02 feedback,
+# PHAN_HOI_JOHNSON_Q4_Q5, js-final-round, QUYET_DINH_PHASE5, v11.3/v12.0 sessions
+
+resolved:
+  uom_conversions:
+    source: "config/settlement_overrides.yaml:76-92"
+    question_id: Q1
+    materials:
+      - K60000201   # HQ 6 MT ↔ SAP 6,000 KG (factor 1000, 1 MT = 1,000 KG)
+      - K60000900   # HQ 60 MT ↔ SAP 60,000 EA (dây hàn)
+      - "1000459277"  # HQ 20,000 M ↔ SAP 20 EA (inverse, cuộn 1000m)
+    note: "K40000011 KG/EA vẫn PENDING (chưa config) — xem pending.k40000011_uom_kg_ea"
+
+  mvt122_as_adjustment:
+    source: "Phase 4.3"
+    question_id: Q3
+    decision: "MvT 122 = điều chỉnh nhập kho (NOT trả NCC). Include in M15 nhap_trong_ky = sum(101+102+122+123)"
+    evidence: "243/268 mã SAP net khớp HQ import khi include 122/123"
+
+  nvl_no_e11_q4_answer:
+    source: "PHAN_HOI_JOHNSON_Q4_Q5.md"
+    question_id: Q4
+    count: 157
+    breakdown:
+      btp_sx_reclassed: 112  # 112 mã BTP tự SX → flatten về NVL gốc
+      waiting_hq: 43          # 43 mã mua ngoài chưa khai HQ (vận đơn GMC25040360/361)
+      exception: 1            # 1000305146 E42 only
+    decision: "112 reclass → BTP_SX (Layer 3 in settlement_overrides), 43 chờ HQ khai bổ sung"
+
+  e11_e13_dual_q2_answer:
+    source: "PHAN_HOI_JOHNSON_Q4_Q5.md"
+    question_id: Q2
+    count: 300
+    decision: "Add E13 import qty to M15 nhap_trong_ky (không add vào xuat_sx, tránh double-count SAP MvT 261)"
+
+  halb_on_nvl_q5_answer:
+    source: "PHAN_HOI_JOHNSON_Q4_Q5.md"
+    question_id: Q5
+    count: 1781
+    breakdown:
+      misclassified_to_btp_sx: 8
+      correct_as_nvl: 1773
+    misclassified_materials:
+      - "093381"
+      - "1000363588"
+      - "1000453857"
+      - "1000461923"
+      - "1000475209"
+      - "1000480200"
+      - "1000480496"
+      - "1000509740"
+    decision: "8 mã sai TK → Layer 6 reclassification → BTP_SX, 1,773 còn lại giữ NVL"
+
+  dual_source_fifo:
+    source: "QUYET_DINH_PHASE5.md"
+    count: 556
+    rule: "M15 nhập = HQ E11/E15 only, xuat_sx capped at HQ available, tồn = HQ - xuat_sx. Hàng tự SX dư → flatten trong M16"
+    config: "config/settlement_overrides.yaml:source_config"
+
+  btp_reclass_phase5:
+    count: 196
+    rule: "Chỉ tự SX, không có PO → BTP_SX → flatten về NVL gốc trong M16"
+    source_csv: "/tmp/q1_reclass_materials.csv (column: material, material_category, type_category)"
+
+  tp_export_override:
+    source: "config/settlement_overrides.yaml:btp_sx_to_tp"
+    materials:
+      - MFW0502-571IN
+      - MPL0101-39IN
+
+  ccdc_with_import:
+    source: "QUYET_DINH_PHASE5.md"
+    count: 13
+    rule: "CCDC có E11/E15 (sơn, dây hàn, màng quấn) → vào M15 + M16 như NVL"
+    excluded_no_hq:
+      - "1000482776"
+
+  t02_feedback_applied:
+    source: "docs/T02-Feedback.xlsx (28/03/2026)"
+    total_materials: 1050
+    groups:
+      - { category: "Vật liệu thử khuôn",   count: 554, m15_source: HQ }
+      - { category: "Không có vấn đề",      count: 243, m15_source: SAP }
+      - { category: "Chưa khai báo HQ",     count: 153, m15_source: SAP }
+      - { category: "Bù sản phẩm lỗi",      count: 41,  m15_source: HQ, status: "TẠM — pending Johnson confirm" }
+      - { category: "Khai báo chưa nhập kho", count: 39, m15_source: HQ }
+      - { category: "Chênh lệch số lượng",  count: 10,  m15_source: SAP }
+      - { category: "Thiếu giấy tờ",        count: 5,   m15_source: HQ }
+      - { category: "Quy đổi đơn vị",       count: 5,   m15_source: HQ }
+
+  v11_3_fixes:
+    source: ".ai/sessions/2026-03-30-*.md"
+    fixes:
+      - btp_closing_stock_norm: "FIFO dual-source asymmetry fixed (raw_flat_norm vs flat_norm)"
+      - cycle_post_solve: "Raw_flat_norm cycle SCC post-solve pass (avoid side-effects)"
+      - traceability: "99.4% → 99.9% giải trình"
+      - webapp_multi_version: "v11.3 + v12.0 dropdown selector"
+
+  v12_0_alternative:
+    branch: "version/keep-sap-stock"
+    approach: "Giữ tồn SAP, derive xuất = nhập − xuất_khác − tồn_MB5B, scale L1 norms"
+    config: "config/norm_scaling.yaml"
+    stats:
+      scaled_nvls: 4059
+      excluded_no_bom: 312
+      excluded_negative_xuat: 40
+      m15_materials_changed: 792
+      traceability: "100% cho 4,059 mã có BOM"
+    status: "Branch song song với master v11.3, deployed barry với dropdown"
+
+pending:
+  t02_buloi_tam:
+    source: "T02-Feedback group 'Bù sản phẩm lỗi'"
+    count: 41
+    current: "Tạm dùng HQ làm nguồn nhập M15"
+    pending: "Johnson chưa confirm có đúng logic này không"
+
+  bom_cycles:
+    source: "Phase 5.6 cycle solver"
+    count: 53
+    breakdown:
+      version_pairs: 21  # 21 cặp chuyển đổi phiên bản BTP
+      self_loop: 6       # 6 mã tự dùng mình làm input
+      other: 26
+    current: "Tạm xử như cấp 1 trong BOM flatten"
+    pending: "Rà soát chi tiết cho BCQT 2026"
+
+  hq_inactive_290:
+    source: "Phase 4 findings"
+    count: 290
+    description: "Mã khai HQ nhưng SAP không có MB5B activity"
+    current: "Phương án B: xuat_khac = nhap, ton = 0"
+    pending: "Chờ hải quan Yên Phong phản hồi có chấp nhận phương án B không"
+
+  m15a_discrepancy_24:
+    count: 24
+    explanation: "TP có tồn kho chứa NVL chưa xuất — defensible nhưng chưa đủ clear"
+    pending: "Agency đang hỏi thêm cột chenh_lech vào M15a output"
+
+  m15_balance_218:
+    source: ".ai/sessions/2026-03-30-m15-open-issues.md"
+    total_balance: 218
+    ratio: "0.002% (218 / 8,784,519)"
+    breakdown:
+      e13_btp_nm_no_gr: 7  # 7 mã BTP_NM có E13 trên HQ nhưng SAP không GR
+      rounding: 3
+    materials:
+      - "0000082212"
+      - "005811-00"
+      - "1000109127"
+      - "1000232864"
+      - "1000443689"
+      - "1000203178"
+      - "1000392158"
+      - "1000436965"
+      - "1000407798"
+      - "1000460989"
+    current: "Ghi chú đủ trong M15 (Balance != 0 nhưng explained)"
+    pending: "Hoặc cap E13 cho BTP_NM scope trong BCQT 2026"
+
+  k40000011_uom_kg_ea:
+    material: K40000011
+    description: "纏繞膜 PE film — CCDC, GL 12200002"
+    hq_unit: KG
+    hq_qty: 10880
+    sap_unit: EA
+    sap_closing_mb5b: 52
+    status: "Chưa config uom_conversions — cần tỷ lệ KG/EA xác nhận (~90.7 KG/EA?)"
+    pending: "Hỏi Johnson confirm tỷ lệ quy đổi"
+
+  k40000041_negative_ton:
+    material: K40000041
+    description: "透明膠帶 băng dính trong — CCDC"
+    ton_m15: -500
+    root_cause: "SAP xuất (MvT 201 = 2400) > HQ khai nhập (1900) → tồn âm"
+    mb5b_actual: 100
+    status: "1 mã duy nhất tồn âm M15"
+    pending: "Fix hoặc note giải trình"
+
+  traceability_gap_30652:
+    total_gap: 30652
+    percent: "0.65%"
+    top_3_concentration: 79  # % of gap from top 3 materials
+    top_materials:
+      - { category: "thép SPHC tấm", percent_of_gap: 79 }
+    root_cause: "Hao hụt cắt dập (scrap ngoài BOM chuẩn)"
+    pending: "Giải quyết sau, không critical cho BCQT 2025"
+
+  q7_hs_codes:
+    status: "Chưa gửi Johnson"
+    topic: "HS code không nhất quán giữa các tờ khai cùng mã"
+
+  q8_negative_stock:
+    status: "Chưa gửi Johnson"
+    topic: "Mã tồn kho âm runtime (chủ yếu timing HQ↔SAP)"
+
+  q9_mvt_903:
+    status: "Chưa gửi Johnson"
+    topic: "MvT 903 semantic — domestic delivery hay xuất SX?"
+
+  v12_excluded_no_bom:
+    count: 312
+    source: "config/norm_scaling.yaml:excluded.no_bom"
+    description: "Mã thử khuôn / không có BOM → không vào M16"
+    pending: "BCQT 2026 có cần xử lý bổ sung không?"
+
+  v12_excluded_negative_xuat:
+    count: 40
+    source: "config/norm_scaling.yaml:excluded.negative_xuat"
+    description: "Mã MB5B closing > nhập HQ → không thể derive xuất dương"
+    pending: "Fix logic hoặc note riêng"
+
+  barry_footer:
+    status: "Deploy v11.2 lên barry nhưng chưa verify footer đã update chính xác"
+
+  generate_dashboard_bug:
+    error: "KeyError 'in_16_not_15'"
+    status: "Pre-existing, không ảnh hưởng settlement output"
+    pending: "Fix khi làm dashboard 2026"
+
+noise_confirmed:
+  null_material_rows:
+    count: 71
+    source: "Phase 1 — ENRICHED_MB51"
+    resolution: "Header artifacts / system errors — KHÔNG PHẢI LỖI, exclude from all checks"
+
+  e13_generic_codes:
+    count: 709
+    patterns:
+      - MC
+      - OTHERS
+      - DC-SON
+      - JIG
+      - empty
+    resolution: "Generic codes HỢP LỆ cho machinery E13. Auto-exclude khỏi audit."
+
+  dual_source_structural:
+    count: 556
+    resolution: "Hành vi dual-source HỢP LỆ (vừa nhập vừa tự SX). Xử lý qua FIFO logic trong Phase 5. KHÔNG PHẢI LỖI."
+
+  hq_only_real:
+    count: 36
+    source: "PHASE4_INVESTIGATION"
+    resolution: "Confirmed HỢP LỆ (thử khuôn, hàng tạm). Dùng HQ làm M15 source."
+
+  halb_inactive_master_only:
+    count: 1591
+    resolution: "Master data only, 0 giao dịch T6-T12/2025. KHÔNG ảnh hưởng BCQT."
+
+  tp_not_exported:
+    count: 29
+    resolution: "SX cuối năm chưa kịp XK. Vào M15a (không M16). HỢP LỆ."
+
+  t04_timing_chenh:
+    count: 2007
+    source: "Phase 4.1"
+    resolution: "SAP vs HQ timing lag (trong năm). Annual total khớp. AUTO_OK."
+
+  mvt122_bulk_adjustment_day:
+    source: "Phase 4.3"
+    pattern: "81% dòng MvT 122 năm 2025 dồn vào 17/07/2025 (bulk warehouse adjustment)"
+    top_3_po_share: 66
+    resolution: "Pattern điều chỉnh hợp lệ, không phải trả NCC. Dùng làm baseline cho R3 Q1 check."
+
+  gas_codes_not_gred:
+    # Mã khí công nghiệp — khai HQ nhưng không GR SAP (tiêu hao trực tiếp từ bồn)
+    patterns:
+      - ARGON
+      - CO2
+      - O2
+      - N2
+      - KHI
+      - HE
+      - GAS
+    examples: ["ARGON/CO2", "KHI", "O2"]
+    resolution: "Khí tiêu hao trực tiếp, không qua cycle GR/GI trên SAP. Không phải lỗi dữ liệu."

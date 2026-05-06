@@ -279,9 +279,12 @@ RULE_FILES = [
 ]
 
 
+CONFIGS_DIR = Path(__file__).resolve().parent.parent.parent / "configs"
+
+
 def _load_yaml_file(key: str) -> tuple[str | None, int, Any]:
-    """Load YAML từ Johnson config dir. Return (text, line_count, parsed_data)."""
-    path = Path("/home/vp/workspace/client/Johnson/config") / f"{key}.yaml"
+    """Load YAML từ configs/ trong project. Return (text, line_count, parsed_data)."""
+    path = CONFIGS_DIR / f"{key}.yaml"
     if not path.exists():
         return None, 0, None
     try:

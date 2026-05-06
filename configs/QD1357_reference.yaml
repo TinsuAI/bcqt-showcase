@@ -1,0 +1,213 @@
+# QĐ 1357/QĐ-TCHQ (18/05/2021) — Complete customs type code reference
+# Source: https://luatvietnam.vn/xuat-nhap-khau/quyet-dinh-1357-qd-tchq-bang-ma-loai-hinh-xuat-khau-nhap-khau-va-huong-dan-su-dung-202284-d1.html
+# This file is the ground truth. Do NOT edit without regulatory basis.
+#
+# 16 EXPORT codes + 24 IMPORT codes = 40 total
+
+# ══════════════════════════════════════════════════════════════
+# EXPORT (Xuất khẩu) — 16 codes
+# ══════════════════════════════════════════════════════════════
+
+B11:
+  group: EXPORT
+  name: "Xuất kinh doanh"
+  description: "DN xuất khẩu hàng hóa ra nước ngoài hoặc xuất khẩu vào khu phi thuế quan"
+
+B12:
+  group: EXPORT
+  name: "Xuất sau khi đã tạm xuất"
+  description: "Hàng tạm xuất không tái nhập, thay đổi mục đích sử dụng tại nước ngoài"
+
+B13:
+  group: EXPORT
+  name: "Xuất khẩu hàng đã nhập khẩu"
+  description: "Xuất khẩu hàng hóa có nguồn gốc nhập khẩu (chưa qua quá trình gia công)"
+
+E42:
+  group: EXPORT
+  name: "Xuất khẩu sản phẩm của DNCX"
+  description: "Xuất SP từ DNCX ra nước ngoài hoặc vào nội địa"
+
+E52:
+  group: EXPORT
+  name: "Xuất sản phẩm gia công"
+  description: "Xuất sản phẩm cho đối tác thuê gia công ở nước ngoài"
+
+E54:
+  group: EXPORT
+  name: "Xuất NVL gia công từ HĐ này sang HĐ khác"
+  description: "Chuyển NVL gia công giữa các hợp đồng"
+
+E62:
+  group: EXPORT
+  name: "Xuất sản phẩm sản xuất xuất khẩu"
+  description: "Xuất SP được SX từ toàn bộ hoặc một phần NVL nhập khẩu"
+
+E82:
+  group: EXPORT
+  name: "Xuất NVL, vật tư thuê gia công"
+  description: "Xuất NVL cho dịch vụ gia công ở nước ngoài"
+
+G21:
+  group: EXPORT
+  name: "Tái xuất hàng kinh doanh TNTX"
+  description: "Tái xuất hàng đã tạm nhập theo loại hình kinh doanh TNTX"
+
+G22:
+  group: EXPORT
+  name: "Tái xuất máy móc, thiết bị đã tạm nhập"
+  description: "Tái xuất máy móc tạm nhập cho dự án có thời hạn"
+
+G23:
+  group: EXPORT
+  name: "Tái xuất hàng tạm nhập miễn thuế"
+  description: "Tái xuất hàng đã tạm nhập miễn thuế"
+
+G24:
+  group: EXPORT
+  name: "Tái xuất khác"
+  description: "Tái xuất hàng theo các loại hình tạm nhập khác"
+
+G61:
+  group: EXPORT
+  name: "Tạm xuất hàng hóa"
+  description: "Tạm xuất hàng hóa ra nước ngoài, vào khu phi thuế quan"
+
+C12:
+  group: EXPORT
+  name: "Hàng hóa từ kho ngoại quan xuất đi nước ngoài"
+  description: "Hàng từ kho ngoại quan xuất đi nước ngoài"
+
+C22:
+  group: EXPORT
+  name: "Hàng đưa ra khu phi thuế quan"
+  description: "Xuất hàng từ khu thương mại đặc biệt ra nước ngoài"
+
+H21:
+  group: EXPORT
+  name: "Xuất khẩu hàng khác"
+  description: "Quà biếu, quà tặng của tổ chức, cá nhân ở Việt Nam gửi ra nước ngoài"
+
+# ══════════════════════════════════════════════════════════════
+# IMPORT (Nhập khẩu) — 24 codes
+# ══════════════════════════════════════════════════════════════
+
+A11:
+  group: IMPORT
+  name: "Nhập kinh doanh tiêu dùng"
+  description: "DN nhập khẩu hàng hóa để kinh doanh, tiêu dùng"
+
+A12:
+  group: IMPORT
+  name: "Nhập kinh doanh sản xuất"
+  description: "Nhập NVL, vật tư, máy móc, thiết bị phục vụ SX trong nước"
+
+A21:
+  group: IMPORT
+  name: "Chuyển tiêu thụ nội địa từ nguồn tạm nhập"
+  description: "Chuyển tiêu thụ nội địa hàng từ nguồn tạm nhập"
+
+A31:
+  group: IMPORT
+  name: "Nhập khẩu hàng hóa đã xuất khẩu"
+  description: "Tái nhập hàng đã xuất khẩu của các loại hình xuất kinh doanh"
+
+A41:
+  group: IMPORT
+  name: "Nhập kinh doanh của DN FDI thực hiện quyền nhập khẩu"
+  description: "DN có vốn đầu tư nước ngoài thực hiện nhập khẩu hàng hóa"
+
+A42:
+  group: IMPORT
+  name: "Thay đổi MĐSD hoặc chuyển tiêu thụ nội địa"
+  description: "Thay đổi mục đích sử dụng hoặc chuyển tiêu thụ nội địa"
+
+A43:
+  group: IMPORT
+  name: "Nhập khẩu hàng hóa thuộc Chương trình ưu đãi thuế"
+  description: "Nhập linh kiện ô tô theo Chương trình ưu đãi thuế"
+
+A44:
+  group: IMPORT
+  name: "Tạm nhập hàng hóa bán tại cửa hàng miễn thuế"
+  description: "Tạm nhập hàng hóa bán tại cửa hàng miễn thuế"
+
+E11:
+  group: IMPORT
+  name: "Nhập NVL của DNCX từ nước ngoài"
+  description: "DNCX nhập NVL từ nước ngoài"
+
+E13:
+  group: IMPORT
+  name: "Nhập hàng hóa khác vào DNCX"
+  description: "DNCX nhập khẩu từ nước ngoài, từ nội địa hoặc từ DNCX khác (máy móc, thiết bị, hàng hóa khác)"
+
+E15:
+  group: IMPORT
+  name: "Nhập NVL, vật tư của DNCX từ nội địa"
+  description: "DNCX nhập NVL, vật tư từ nội địa"
+
+E21:
+  group: IMPORT
+  name: "Nhập NVL, vật tư để gia công cho thương nhân nước ngoài"
+  description: "Nhập NVL, vật tư để gia công cho thương nhân nước ngoài"
+
+E23:
+  group: IMPORT
+  name: "Nhập NVL, vật tư gia công từ HĐ khác chuyển sang"
+  description: "Nhận NVL chuyển từ hợp đồng gia công khác"
+
+E31:
+  group: IMPORT
+  name: "Nhập NVL sản xuất xuất khẩu"
+  description: "Nhập NVL, vật tư để SX hàng xuất khẩu"
+
+E33:
+  group: IMPORT
+  name: "Nhập NVL, vật tư vào kho bảo thuế"
+  description: "Nhập NVL, vật tư đưa vào kho bảo thuế để SX hàng xuất khẩu"
+
+E41:
+  group: IMPORT
+  name: "Nhập sản phẩm thuê gia công ở nước ngoài"
+  description: "Nhập lại SP sau khi gia công ở nước ngoài"
+
+G11:
+  group: IMPORT
+  name: "Tạm nhập hàng kinh doanh TNTX"
+  description: "Tạm nhập hàng theo loại hình kinh doanh tạm nhập tái xuất"
+
+G12:
+  group: IMPORT
+  name: "Tạm nhập máy móc, thiết bị phục vụ dự án có thời hạn"
+  description: "Tạm nhập máy móc, thiết bị để SX, thi công xây dựng"
+
+G13:
+  group: IMPORT
+  name: "Tạm nhập miễn thuế"
+  description: "Tạm nhập để tổ chức hoặc tham dự hội chợ, triển lãm, giới thiệu SP"
+
+G14:
+  group: IMPORT
+  name: "Tạm nhập khác"
+  description: "Ô tô, xe máy tạm nhập của tổ chức, cá nhân được hưởng ưu đãi"
+
+G51:
+  group: IMPORT
+  name: "Tái nhập hàng hóa đã tạm xuất"
+  description: "Nhập khẩu hàng hóa đã tạm xuất (xuất theo chế độ tạm)"
+
+C11:
+  group: IMPORT
+  name: "Hàng nước ngoài gửi kho ngoại quan"
+  description: "Hàng hóa từ nước ngoài gửi kho ngoại quan"
+
+C21:
+  group: IMPORT
+  name: "Hàng đưa vào khu phi thuế quan"
+  description: "Hàng từ nước ngoài đưa vào khu phi thuế quan"
+
+H11:
+  group: IMPORT
+  name: "Hàng nhập khẩu khác"
+  description: "Quà biếu, quà tặng của tổ chức, cá nhân nước ngoài gửi cho VN"
