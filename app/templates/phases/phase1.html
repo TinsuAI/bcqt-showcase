@@ -51,7 +51,7 @@
             <thead>
                 <tr>
                     <th>Ngày</th><th>Số TK</th><th>Loại hình</th>
-                    <th>Hướng</th><th>Material</th><th class="num">SL</th><th>UOM</th><th class="num">USD</th>
+                    <th>Hướng</th><th>Mã hàng</th><th class="num">SL</th><th>UOM</th><th class="num">Trị giá (VND)</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,12 +59,12 @@
                 <tr>
                     <td class="mono">{{ r.declaration_date or "" }}</td>
                     <td class="mono">{{ r.declaration_no or "" }}</td>
-                    <td><span class="badge {% if r.direction == 'import' %}info{% else %}success{% endif %}">{{ r.customs_type or "—" }}</span></td>
-                    <td>{{ r.direction or "" }}</td>
+                    <td><span class="badge {% if r.direction == 'import' %}info{% elif r.direction == 'export' %}success{% else %}neutral{% endif %}">{{ r.customs_type or "—" }}</span></td>
+                    <td class="small">{{ r.direction or "" }}</td>
                     <td class="mono">{{ r.material or "" }}</td>
                     <td class="num">{{ r.quantity | num }}</td>
                     <td>{{ r.uom or "" }}</td>
-                    <td class="num">{{ r.amount_usd | num }}</td>
+                    <td class="num">{{ r.amount_usd | num(0) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

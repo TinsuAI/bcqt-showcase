@@ -244,21 +244,22 @@ def seed_bcct_sample(db, company: Company, limit: int = 3000) -> None:
 
     rows = []
     for _, r in df.iterrows():
-        ctype = _safe_str(r.get("customs_type") or r.get("loai_hinh"))
-        direction = "import" if ctype and ctype.startswith("E1") else (
-            "export" if ctype and ctype.startswith("E4") else None
-        )
+        ctype = _safe_str(r.get("customs_type_code"))
+        direction_raw = _safe_str(r.get("customs_direction")) or ""
+        direction = direction_raw.lower() if direction_raw else None
         rows.append(
             BcctRecord(
                 company_id=company.id,
-                declaration_date=_to_date(r.get("declaration_date") or r.get("ngay_dang_ky")),
-                declaration_no=_safe_str(r.get("declaration_no") or r.get("so_to_khai")),
+                declaration_date=_to_date(r.get("registration_date")),
+                declaration_no=_safe_str(r.get("declaration_no")),
                 customs_type=ctype,
                 direction=direction,
-                material=_safe_str(r.get("material") or r.get("ma_hang")),
-                quantity=fnum(r.get("quantity") or r.get("luong")),
-                uom=_safe_str(r.get("uom") or r.get("dvt")),
-                amount_usd=fnum(r.get("amount_usd") or r.get("tri_gia")),
+                material=_safe_str(r.get("material_code")),
+                quantity=fnum(r.get("total_qty")),
+                uom=_safe_str(r.get("qty_unit")),
+                # Field tên `amount_usd` nhưng giá trị thực là VND (currency col = VND).
+                # Demo: dùng cột này cho VND luôn cho đỡ migrate schema.
+                amount_usd=fnum(r.get("total_value")),
             )
         )
     db.add_all(rows)
