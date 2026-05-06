@@ -1,7 +1,8 @@
 services:
   app:
-    image: ghcr.io/tinsuai/bcqt-showcase:${IMAGE_TAG:-latest}
-    pull_policy: ${PULL_POLICY:-missing}
+    image: bcqt-showcase:latest
+    build:
+      context: .
     container_name: bcqt-showcase
     restart: unless-stopped
     environment:
@@ -11,7 +12,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY not set}
       PORT: 8088
     volumes:
-      - bcqt_data:/data
+      - ./data:/data
     ports:
       # Bind to localhost only — Cloudflare Tunnel handles public traffic
       - "127.0.0.1:${HOST_PORT:-8093}:8088"
@@ -26,7 +27,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  bcqt_data:
-    name: bcqt_showcase_data
