@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.db import get_db
 from app.models import BomEdge, BomNode, Mau16Row, NvlTraceability, PipelineRun, ProcessLog, RiskFinding
 from app.routes.companies import get_company_or_404

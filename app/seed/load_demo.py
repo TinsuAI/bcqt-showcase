@@ -24,15 +24,15 @@ from app.models import (
     BcctRecord,
     BomCycle,
     BomCycleEdge,
+    BomEdge,
+    BomNode,
     Company,
     Investigation,
     Material,
-    Mau15Row,
     Mau15aRow,
+    Mau15Row,
     Mau16Row,
     Mb51Movement,
-    BomEdge,
-    BomNode,
     NvlTraceability,
     PhaseArtifact,
     PhaseRun,
@@ -484,8 +484,8 @@ def seed_curated_bom(db, company: Company) -> None:
     m15a = pd.read_csv(m15a_path)
     tp_xk_list = m15a["material"].astype(str).tolist()
 
-    desc_map = dict(zip(mc["material"].astype(str), mc["material_description"].fillna("")))
-    cat_map = dict(zip(mc["material"].astype(str), mc["final_category"].fillna("")))
+    desc_map = dict(zip(mc["material"].astype(str), mc["material_description"].fillna(""), strict=False))
+    cat_map = dict(zip(mc["material"].astype(str), mc["final_category"].fillna(""), strict=False))
     products_set = set(bd["product"].unique())
 
     # Cycle materials — không recurse INTO khi gặp (nhưng nếu chính TP là cycle node, vẫn build root)
@@ -505,32 +505,31 @@ def seed_curated_bom(db, company: Company) -> None:
     nodes_buf: list[BomNode] = []
     edges_buf: list[BomEdge] = []
 
+    def _expand(parent: str, lvl: int, nodes_seen: dict[str, int], edges_local: list[dict]):
+        if lvl > MAX_DEPTH:
+            return
+        children = by_product.get(parent)
+        if children is None or len(children) == 0:
+            return
+        top = children.nlargest(WIDTH_CAP, "norm") if len(children) > WIDTH_CAP else children
+        for _, r in top.iterrows():
+            child = str(r["input_material"])
+            if child == parent or child in nodes_seen:
+                continue
+            nodes_seen[child] = lvl + 1
+            edges_local.append({
+                "src": parent, "dst": child,
+                "norm": float(r["norm"] or 0),
+                "consumed": float(r["total_consumed"] or 0),
+                "produced": float(r["total_produced"] or 0),
+            })
+            if child in products_set and child not in cycle_mats:
+                _expand(child, lvl + 1, nodes_seen, edges_local)
+
     for tp in tp_xk_list:
         nodes_seen: dict[str, int] = {tp: 0}
         edges_local: list[dict] = []
-
-        def expand(parent: str, lvl: int):
-            if lvl > MAX_DEPTH:
-                return
-            children = by_product.get(parent)
-            if children is None or len(children) == 0:
-                return
-            top = children.nlargest(WIDTH_CAP, "norm") if len(children) > WIDTH_CAP else children
-            for _, r in top.iterrows():
-                child = str(r["input_material"])
-                if child == parent or child in nodes_seen:
-                    continue
-                nodes_seen[child] = lvl + 1
-                edges_local.append({
-                    "src": parent, "dst": child,
-                    "norm": float(r["norm"] or 0),
-                    "consumed": float(r["total_consumed"] or 0),
-                    "produced": float(r["total_produced"] or 0),
-                })
-                if child in products_set and child not in cycle_mats:
-                    expand(child, lvl + 1)
-
-        expand(tp, 0)
+        _expand(tp, 0, nodes_seen, edges_local)
 
         for mat, lvl in nodes_seen.items():
             nodes_buf.append(BomNode(
