@@ -672,6 +672,22 @@ table.data tr.row-link { cursor: pointer; }
     .lc-row { grid-template-columns: 1fr; }
 }
 
+/* ===== BOM gallery / graph ===== */
+.tp-card { transition: var(--transition); }
+.tp-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.tp-card.selected { border-color: var(--primary); background: var(--primary-soft); }
+.tp-card.selected .panel-head { background: transparent; }
+
+.bom-legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    font-size: 12px; color: var(--foreground-soft);
+}
+.bom-legend .leg { display: flex; align-items: center; gap: 6px; }
+.bom-legend .leg-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1px solid var(--border-strong);
+}
+
 /* ===== YAML view ===== */
 .yaml-view {
     background: var(--surface-subtle);

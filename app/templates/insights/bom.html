@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Đồ thị BOM — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Đồ thị BOM</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Đồ thị dây chuyền sản xuất</h1>
+            <div class="meta">
+                Mỗi mã thành phẩm xuất khẩu đều có 1 cây BOM truy ngược về NVL gốc — pipeline tự dựng từ MB51 thật, không phụ thuộc BOM khai báo nội bộ.
+            </div>
+        </div>
+        <div class="page-actions">
+            <span class="badge neutral">{{ gallery | length }} TP đại diện</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Chọn thành phẩm để xem</h2>
+        <div class="meta">6 TP đại diện — chain 2 cấp, 8-18 NVL, không thuộc cycle.</div>
+    </div>
+    <div class="grid-3">
+        {% for g in gallery %}
+        <a class="panel tp-card {% if g.code == selected_tp %}selected{% endif %}" href="/c/{{ company.slug }}/bom?tp={{ g.code }}" style="display: block;">
+            <div class="panel-head">
+                <h3 class="mono">{{ g.code }}</h3>
+                {% if g.code == selected_tp %}<span class="badge primary">Đang xem</span>{% endif %}
+            </div>
+            <div class="panel-body">
+                <p class="tiny muted" style="min-height: 32px;">{{ (g.description or "") | truncate(80) }}</p>
+                <div class="row" style="gap: 6px; margin-top: 10px; flex-wrap: wrap;">
+                    <span class="badge neutral">{{ g.n_nodes }} mã</span>
+                    <span class="badge neutral">{{ g.n_edges }} cạnh</span>
+                    <span class="badge neutral">L0–L{{ g.max_level }}</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+{% if selected_tp and nodes %}
+<section class="section">
+    <div class="section-head">
+        <h2>Cây BOM của <span class="mono">{{ selected_tp }}</span></h2>
+        <div class="meta">
+            {{ nodes | length }} mã · {{ edges | length }} cạnh · click vào node để xem chi tiết.
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-body">
+            <div class="bom-legend">
+                <span class="leg"><span class="leg-dot" style="background: var(--primary);"></span> TP xuất khẩu</span>
+                <span class="leg"><span class="leg-dot" style="background: var(--warning);"></span> BTP tự sản xuất</span>
+                <span class="leg"><span class="leg-dot" style="background: var(--info);"></span> NVL gốc</span>
+                <span class="leg"><span class="leg-dot" style="background: var(--foreground-muted);"></span> Khác</span>
+            </div>
+            <div id="bom-graph" style="width: 100%; height: 540px; margin-top: 12px;"
+                 data-graph='{{ {"nodes": nodes_json, "edges": edges_json} | tojson }}'></div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Chi tiết các mã trong cây</h2>
+    </div>
+    <div class="panel"><div class="table-wrap">
+        <table class="data">
+            <thead><tr>
+                <th>Mã</th><th>Mô tả</th>
+                <th>Cấp</th><th>Phân loại</th>
+            </tr></thead>
+            <tbody>
+                {% for n in nodes %}
+                <tr>
+                    <td class="mono">{{ n.material }}</td>
+                    <td class="small">{{ n.description or "" }}</td>
+                    <td><span class="badge neutral">L{{ n.level }}</span></td>
+                    <td>
+                        {% if n.level == 0 %}<span class="badge primary">TP XK</span>
+                        {% elif n.category == "BTP_SX" %}<span class="badge warning">BTP_SX</span>
+                        {% elif n.category == "BTP_NM" %}<span class="badge warning">BTP_NM</span>
+                        {% elif n.category == "NVL" %}<span class="badge info">NVL</span>
+                        {% else %}<span class="badge neutral">{{ n.category or "—" }}</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div></div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.addEventListener("load", () => {
+    if (typeof echarts === "undefined") return;
+    const el = document.getElementById("bom-graph");
+    if (!el) return;
+
+    const data = JSON.parse(el.dataset.graph);
+    const cs = getComputedStyle(document.body);
+    const fg = cs.getPropertyValue("--foreground").trim();
+    const muted = cs.getPropertyValue("--foreground-muted").trim();
+
+    const colorByCat = (n) => {
+        if (n.level === 0) return cs.getPropertyValue("--primary").trim();
+        if (n.category && n.category.startsWith("BTP")) return cs.getPropertyValue("--warning").trim();
+        if (n.category === "NVL") return cs.getPropertyValue("--info").trim();
+        return cs.getPropertyValue("--foreground-muted").trim();
+    };
+
+    const sizeByLevel = (lvl) => lvl === 0 ? 56 : lvl === 1 ? 36 : 26;
+
+    // Build a tree-like layout: ECharts tree expects parent→children. Build from edges.
+    // Use force layout with categories per level — simpler and handles non-tree shapes.
+    const nodes = data.nodes.map(n => ({
+        name: n.material,
+        symbolSize: sizeByLevel(n.level),
+        category: n.level,
+        value: n.description || "",
+        itemStyle: {
+            color: colorByCat(n),
+            borderColor: fg,
+            borderWidth: 1.2,
+            opacity: 0.92,
+        },
+        label: {
+            show: true,
+            position: n.level === 0 ? "top" : "right",
+            color: fg,
+            fontFamily: "IBM Plex Mono",
+            fontSize: n.level === 0 ? 12 : 10.5,
+            fontWeight: n.level === 0 ? 600 : 400,
+        },
+        _meta: n,
+    }));
+
+    const links = data.edges.map(e => ({
+        source: e.src,
+        target: e.dst,
+        value: e.norm,
+        label: {
+            show: true,
+            formatter: e.norm < 0.001 ? "" : (e.norm < 0.01 ? e.norm.toExponential(1) : e.norm.toFixed(3)),
+            fontSize: 9.5,
+            color: muted,
+        },
+        lineStyle: { color: muted, opacity: 0.5, width: 1.2, curveness: 0 },
+    }));
+
+    const categories = [
+        { name: "TP" }, { name: "L1" }, { name: "L2" }, { name: "L3" },
+    ];
+
+    const chart = echarts.init(el);
+    chart.setOption({
+        tooltip: {
+            trigger: "item",
+            formatter: (p) => {
+                if (p.dataType === "node") {
+                    const m = p.data._meta;
+                    return `<b>${m.material}</b><br>L${m.level} · ${m.category || "—"}<br>${m.description || ""}`;
+                }
+                if (p.dataType === "edge") {
+                    return `${p.data.source} → ${p.data.target}<br>Định mức: ${p.data.value.toFixed(6)}`;
+                }
+                return "";
+            },
+        },
+        animationDuration: 600,
+        animationEasingUpdate: "quinticInOut",
+        series: [{
+            type: "graph",
+            layout: "force",
+            roam: true,
+            draggable: true,
+            categories,
+            data: nodes,
+            links,
+            edgeSymbol: ["none", "arrow"],
+            edgeSymbolSize: 7,
+            force: {
+                repulsion: 220,
+                edgeLength: [60, 100],
+                gravity: 0.06,
+                friction: 0.6,
+            },
+            emphasis: {
+                focus: "adjacency",
+                lineStyle: { width: 2.5, opacity: 0.9 },
+            },
+        }],
+    });
+
+    window.addEventListener("resize", () => chart.resize());
+    window.addEventListener("theme-changed", () => setTimeout(() => location.reload(), 50));
+});
+</script>
+{% endblock %}

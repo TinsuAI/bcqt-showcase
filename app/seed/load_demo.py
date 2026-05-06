@@ -31,6 +31,8 @@ from app.models import (
     Mau15aRow,
     Mau16Row,
     Mb51Movement,
+    BomEdge,
+    BomNode,
     NvlTraceability,
     PhaseArtifact,
     PhaseRun,
@@ -465,6 +467,78 @@ def seed_bom_cycles(db, company: Company) -> None:
             )
 
 
+def seed_curated_bom(db, company: Company) -> None:
+    """Pre-compute đồ thị BOM cho 6 TP curated (chain 2-3 level, 8-15 NVL, không cycle)."""
+    f = OUT / f"HO_SO_GIAI_TRINH_{VER}.xlsx"
+    if not f.exists():
+        return
+    try:
+        bd = pd.read_excel(f, sheet_name="BOM_Direct")
+        mc = pd.read_excel(f, sheet_name="Material_Classification")
+    except Exception:
+        return
+
+    # 6 TP curated theo phân tích offline
+    curated = ["MGM1139-252", "MEP2554-01US", "MGM1200-406", "MGM1212-406", "MGM0996-USA", "MGM1036-USA"]
+
+    desc_map = dict(zip(mc["material"].astype(str), mc["material_description"].fillna("")))
+    cat_map = dict(zip(mc["material"].astype(str), mc["final_category"].fillna("")))
+
+    products_set = set(bd["product"].unique())  # những mã có thể là output → là BTP/TP
+
+    for tp in curated:
+        # Recursive expand depth 3, cycle-safe
+        nodes_seen: dict[str, int] = {}  # mat → level
+        edges = []
+
+        def add_node(mat: str, lvl: int):
+            if mat not in nodes_seen or nodes_seen[mat] > lvl:
+                nodes_seen[mat] = lvl
+
+        def expand(parent: str, lvl: int, max_lvl: int = 2):
+            if lvl > max_lvl:
+                return
+            children = bd[bd["product"] == parent]
+            for _, r in children.iterrows():
+                child = str(r["input_material"])
+                if child == parent or child in nodes_seen:  # cycle/self-loop
+                    continue
+                add_node(child, lvl + 1)
+                edges.append({
+                    "src": parent, "dst": child,
+                    "norm": float(r["norm"] or 0),
+                    "consumed": float(r["total_consumed"] or 0),
+                    "produced": float(r["total_produced"] or 0),
+                })
+                # Recurse only if child is a product (BTP)
+                if child in products_set:
+                    expand(child, lvl + 1, max_lvl)
+
+        add_node(tp, 0)
+        expand(tp, 0)
+
+        for mat, lvl in nodes_seen.items():
+            db.add(
+                BomNode(
+                    company_id=company.id,
+                    tp_code=tp,
+                    material=mat,
+                    description=desc_map.get(mat) or None,
+                    level=lvl,
+                    category=cat_map.get(mat) or None,
+                )
+            )
+        for e in edges:
+            db.add(
+                BomEdge(
+                    company_id=company.id,
+                    tp_code=tp,
+                    src=e["src"], dst=e["dst"],
+                    norm=e["norm"], consumed=e["consumed"], produced=e["produced"],
+                )
+            )
+
+
 def seed_phase_artifacts(db, company: Company) -> None:
     """File input/output mỗi phase tạo ra — list để show ở per-phase page."""
     items = [
@@ -525,17 +599,17 @@ def seed_phase_artifacts(db, company: Company) -> None:
 def seed_pipeline_runs(db, company: Company) -> None:
     """Lịch sử chạy pipeline — 8 lần thật từ session note Johnson."""
     runs = [
-        (1, "v0.9", "P1-P3", datetime(2026, 3, 1, 9, 14), 1820, "Phạm Vương", "done", 12, "Lần đầu chuẩn hoá data thô"),
-        (2, "v1.0", "P1-P3", datetime(2026, 3, 5, 0, 30), 1843, "Phạm Vương", "done", 14, "Tag v1-final, archived"),
-        (3, "v2.0", "P2", datetime(2026, 3, 5, 1, 54), 612, "Trần Tú Anh", "done", 4, "Material Master 20.064 mã"),
-        (4, "v2.1", "P3-P4", datetime(2026, 3, 6, 2, 17), 1380, "Phạm Vương", "done", 8, "Audit + investigation 4.1"),
-        (5, "v3.0", "P4", datetime(2026, 3, 9, 15, 47), 720, "Phạm Vương", "done", 2, "Inv 4.3 MvT 122"),
-        (6, "v3.1", "P4", datetime(2026, 3, 9, 16, 5), 542, "Phạm Vương", "done", 2, "Inv 4.4 static vs behavior"),
-        (7, "v10.0", "P5", datetime(2026, 3, 22, 8, 20), 480, "Trần Tú Anh", "done", 5, "Mẫu 15/15a/16 first cut"),
-        (8, "v11.0", "P5", datetime(2026, 3, 23, 1, 57), 510, "Phạm Vương", "done", 5, "Refactor settlement/ package"),
-        (9, "v11.2", "P5", datetime(2026, 3, 30, 8, 54), 488, "Phạm Vương", "done", 5, "M15=4.853, M15a=517, M16=42.678. 8/8 PASS"),
-        (10, "v11.3", "P5-P6", datetime(2026, 3, 30, 13, 36), 521, "Trần Tú Anh", "done", 6, "Fix BTP closing stock norm. Traceability 99,4 → 99,9%"),
-        (11, "v12.0", "P5-P6", datetime(2026, 3, 30, 21, 35), 492, "Phạm Vương", "done", 7, "Final: 9/9 PASS, M15=4.773, all overrides applied"),
+        (1, "v0.9", "P1-P3", datetime(2026, 3, 1, 9, 14), 1820, "Lê Minh Tuấn", "done", 12, "Lần đầu chuẩn hoá data thô"),
+        (2, "v1.0", "P1-P3", datetime(2026, 3, 5, 0, 30), 1843, "Lê Minh Tuấn", "done", 14, "Tag v1-final, archived"),
+        (3, "v2.0", "P2", datetime(2026, 3, 5, 1, 54), 612, "Nguyễn Thu Hà", "done", 4, "Material Master 20.064 mã"),
+        (4, "v2.1", "P3-P4", datetime(2026, 3, 6, 2, 17), 1380, "Lê Minh Tuấn", "done", 8, "Audit + investigation 4.1"),
+        (5, "v3.0", "P4", datetime(2026, 3, 9, 15, 47), 720, "Lê Minh Tuấn", "done", 2, "Inv 4.3 MvT 122"),
+        (6, "v3.1", "P4", datetime(2026, 3, 9, 16, 5), 542, "Lê Minh Tuấn", "done", 2, "Inv 4.4 static vs behavior"),
+        (7, "v10.0", "P5", datetime(2026, 3, 22, 8, 20), 480, "Nguyễn Thu Hà", "done", 5, "Mẫu 15/15a/16 first cut"),
+        (8, "v11.0", "P5", datetime(2026, 3, 23, 1, 57), 510, "Lê Minh Tuấn", "done", 5, "Refactor settlement/ package"),
+        (9, "v11.2", "P5", datetime(2026, 3, 30, 8, 54), 488, "Lê Minh Tuấn", "done", 5, "M15=4.853, M15a=517, M16=42.678. 8/8 PASS"),
+        (10, "v11.3", "P5-P6", datetime(2026, 3, 30, 13, 36), 521, "Nguyễn Thu Hà", "done", 6, "Fix BTP closing stock norm. Traceability 99,4 → 99,9%"),
+        (11, "v12.0", "P5-P6", datetime(2026, 3, 30, 21, 35), 492, "Lê Minh Tuấn", "done", 7, "Final: 9/9 PASS, M15=4.773, all overrides applied"),
     ]
     for run_no, version, phases, started, duration, actor, status, n_art, note in runs:
         db.add(
@@ -758,33 +832,33 @@ def seed_risks(db, company: Company) -> None:
 def seed_process_logs(db, company: Company) -> None:
     """Nhật ký xử lý — kể chuyện ai làm gì lúc nào (read-only, không tương tác)."""
     logs = [
-        (date(2026, 3, 5), "Trần Tú Anh", "PTDL", 1, "Chốt rule clean MB51 + MB5B + BCCT",
+        (date(2026, 3, 5), "Nguyễn Thu Hà", "PTDL", 1, "Chốt rule clean MB51 + MB5B + BCCT",
          "Confirm: column rename TQ → EN, dedup theo material+date+order, drop garbage rows. Output: CLEAN_MB51 243.421 dòng, CLEAN_MB5B 20.064 mã."),
-        (date(2026, 3, 5), "Phạm Vương", "PTDL", 2, "Hoàn tất phân loại Material Master 20.064 mã",
+        (date(2026, 3, 5), "Lê Minh Tuấn", "PTDL", 2, "Hoàn tất phân loại Material Master 20.064 mã",
          "Pipeline áp rule TK kế toán làm gốc, Material Type xác minh. Phát hiện 2.100 mâu thuẫn (1.781 HALB+12150000, 293 ROH+12130003). Cờ riêng để hỏi khách."),
-        (date(2026, 3, 5), "Trang", "BA", 3, "Audit 13 test + 5 cross-check hoàn tất",
+        (date(2026, 3, 5), "Đỗ Thị Mai", "BA", 3, "Audit 13 test + 5 cross-check hoàn tất",
          "18.800 finding trên 5.314 mã. Top finding: T02 UOM mismatch (×1000 g/kg), T11 negative stock thời điểm, X02 MB51 vs BCCT lệch tổng nhập."),
-        (date(2026, 3, 6), "Ms. Duyên", "Trưởng nhóm", None, "Đề xuất framework BOM flatten",
+        (date(2026, 3, 6), "Trần Quốc Anh", "Trưởng nhóm", None, "Đề xuất framework BOM flatten",
          "Quyết định: BTP tự SX không lên Mẫu 15/15a/16 — flatten về NVL gốc theo TT 39/2018. 117 TP dual-role mỗi cái có Mẫu 16 riêng + flatten vào TP cha."),
-        (date(2026, 3, 9), "Phạm Vương", "PTDL", 4, "Investigation 4.3 — MvT 122 / mã loại hình B13",
+        (date(2026, 3, 9), "Lê Minh Tuấn", "PTDL", 4, "Investigation 4.3 — MvT 122 / mã loại hình B13",
          "Kết luận: MvT 122 = điều chỉnh nhập kho (KHÔNG phải trả hàng NCC). 243/268 mã SAP net (101+102) khớp HQ import. Q3 chuyển BLOCKING_P5 → resolved."),
-        (date(2026, 3, 9), "Phạm Vương", "PTDL", 4, "Investigation 4.4 — phân loại tĩnh vs hành vi",
+        (date(2026, 3, 9), "Lê Minh Tuấn", "PTDL", 4, "Investigation 4.4 — phân loại tĩnh vs hành vi",
          "340 mã (5,5%) mâu thuẫn. 131 giải quyết bằng Material Type, 209 mã cả TK + type sai. Áp quy tắc 'Hành vi > Loại VT > TK kế toán'."),
-        (date(2026, 3, 22), "Ms. Duyên", "Trưởng nhóm", 2, "Xác nhận 1.781 mã HALB trên TK 12150000 → giữ NVL",
+        (date(2026, 3, 22), "Trần Quốc Anh", "Trưởng nhóm", 2, "Xác nhận 1.781 mã HALB trên TK 12150000 → giữ NVL",
          "Lý do: linh kiện mua ngoài kế toán treo trên TK NVL theo quy ước nội bộ. Hành vi sử dụng giống NVL. Phase 5 áp dụng phân loại NVL cho nhóm này."),
-        (date(2026, 3, 23), "Phạm Vương", "PTDL", 5, "Phase 5 v11.2 — sinh Mẫu 15/15a/16",
+        (date(2026, 3, 23), "Lê Minh Tuấn", "PTDL", 5, "Phase 5 v11.2 — sinh Mẫu 15/15a/16",
          "Mẫu 15: 4.853 dòng. Mẫu 15a: 517 mã. Mẫu 16: 42.678 dòng (517 TP). 8/8 test PASS. NVL Traceability 99,4%."),
-        (date(2026, 3, 24), "Trần Tú Anh", "PTDL", 5, "Phát hiện 20 vòng tròn sản xuất + giải bằng hệ tuyến tính",
+        (date(2026, 3, 24), "Nguyễn Thu Hà", "PTDL", 5, "Phát hiện 20 vòng tròn sản xuất + giải bằng hệ tuyến tính",
          "Tarjan SCC tìm 20 SCC (44 mã). Lớn nhất 4-node MGM1114-*. Solver (I − C)·X = K: tất cả ρ(C) < 1, hệ số khuếch đại 1.002 – 2.0. Critic review pass."),
-        (date(2026, 3, 25), "Trần Tú Anh", "PTDL", 5, "Domain expert + critic review — rework norm",
+        (date(2026, 3, 25), "Nguyễn Thu Hà", "PTDL", 5, "Domain expert + critic review — rework norm",
          "Verify TT 38/2015 + TT 39/2018 + TT 121/2025: self-loop solver là cách đúng để xử lý rework. Không có khoảng trống pháp lý A→A. Approved."),
-        (date(2026, 3, 30), "Phạm Vương", "PTDL", 5, "Phase 5 v11.3 — fix BTP closing stock norm",
+        (date(2026, 3, 30), "Lê Minh Tuấn", "PTDL", 5, "Phase 5 v11.3 — fix BTP closing stock norm",
          "Bug: BTP tồn cuối tính sai norm khi flatten. Fix → traceability 99,4% → 99,9% (residual 30.652 → 6.619)."),
-        (date(2026, 3, 30), "Trần Tú Anh", "PTDL", 5, "Phase 5 v12.0 — chốt tất cả overrides",
+        (date(2026, 3, 30), "Nguyễn Thu Hà", "PTDL", 5, "Phase 5 v12.0 — chốt tất cả overrides",
          "Áp tất cả T02/UOM rule, dual-source FIFO, source_config. M15=4.773, M15a=517, M16=42.676 (517 TP). 9/9 validation PASS."),
-        (date(2026, 3, 30), "Phạm Vương", "PTDL", 6, "Validate cuối — 9/9 PASS",
+        (date(2026, 3, 30), "Lê Minh Tuấn", "PTDL", 6, "Validate cuối — 9/9 PASS",
          "M15 nhập = HQ import (diff 0,0%). M15a XK = E42 (diff 0,1%). M16 ⊆ M15. Mass conservation ✓. Cycle ρ(C) < 1 ✓. CCDC scope ✓."),
-        (date(2026, 4, 19), "Trang", "BA", None, "Tổng hợp 9 câu hỏi blocking gửi Johnson",
+        (date(2026, 4, 19), "Đỗ Thị Mai", "BA", None, "Tổng hợp 9 câu hỏi blocking gửi Johnson",
          "Q1-Q5 BLOCKING_P5, Q6-Q8 BLOCKING_SUBMISSION, Q9 NON_BLOCKING. Đợi phản hồi từ phòng kế toán Johnson."),
     ]
     for occurred, actor, role, phase_no, action, detail in logs:
@@ -845,6 +919,7 @@ def main() -> None:
         seed_mau15a(db, company)
         seed_mau16(db, company)
         seed_bom_cycles(db, company)
+        seed_curated_bom(db, company)
         seed_phase_artifacts(db, company)
         seed_pipeline_runs(db, company)
         seed_nvl_traceability(db, company)
@@ -857,8 +932,8 @@ def main() -> None:
         print(f"[seed] OK — main company id={n.id} slug={n.slug}")
         for tbl in (Material, Mb51Movement, BcctRecord, AuditFinding, Investigation,
                     Mau15Row, Mau15aRow, Mau16Row, BomCycle, BomCycleEdge,
-                    PhaseArtifact, PipelineRun, NvlTraceability, RiskFinding,
-                    ProcessLog, ValidationResult):
+                    PhaseArtifact, PipelineRun, BomNode, BomEdge,
+                    NvlTraceability, RiskFinding, ProcessLog, ValidationResult):
             cnt = db.scalar(select(__import__("sqlalchemy").func.count()).select_from(tbl))
             print(f"  {tbl.__tablename__:24s} {cnt:>8d}")
 

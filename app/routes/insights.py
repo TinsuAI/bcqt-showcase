@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import Mau16Row, NvlTraceability, PipelineRun, ProcessLog, RiskFinding
+from app.models import BomEdge, BomNode, Mau16Row, NvlTraceability, PipelineRun, ProcessLog, RiskFinding
 from app.routes.companies import get_company_or_404
 
 router = APIRouter(prefix="/c/{slug}", tags=["insights"])
@@ -106,6 +106,86 @@ def process_log(slug: str, request: Request, db: Session = Depends(get_db),
     return request.app.state.render(
         request, "insights/log.html",
         company=c, logs=logs, selected_phase=phase,
+    )
+
+
+@router.get("/bom")
+def bom(slug: str, request: Request, db: Session = Depends(get_db),
+        tp: str | None = Query(None)):
+    c = get_company_or_404(db, slug)
+
+    # Curated TPs có sẵn data — list từ DB
+    curated_codes = db.scalars(
+        select(BomNode.tp_code)
+        .where(BomNode.company_id == c.id, BomNode.level == 0)
+        .group_by(BomNode.tp_code)
+        .order_by(BomNode.tp_code)
+    ).all()
+
+    # TP gallery: số nodes + edges per TP
+    gallery = []
+    for code in curated_codes:
+        n_nodes = db.scalar(
+            select(func.count()).select_from(BomNode)
+            .where(BomNode.company_id == c.id, BomNode.tp_code == code)
+        ) or 0
+        n_edges = db.scalar(
+            select(func.count()).select_from(BomEdge)
+            .where(BomEdge.company_id == c.id, BomEdge.tp_code == code)
+        ) or 0
+        max_level = db.scalar(
+            select(func.max(BomNode.level))
+            .where(BomNode.company_id == c.id, BomNode.tp_code == code)
+        ) or 0
+        root = db.scalar(
+            select(BomNode).where(
+                BomNode.company_id == c.id, BomNode.tp_code == code, BomNode.level == 0
+            )
+        )
+        gallery.append({
+            "code": code,
+            "description": root.description if root else "",
+            "n_nodes": n_nodes,
+            "n_edges": n_edges,
+            "max_level": max_level,
+        })
+
+    # Default to first curated if no tp param
+    selected_tp = tp if tp in curated_codes else (curated_codes[0] if curated_codes else None)
+
+    nodes = []
+    edges = []
+    nodes_json: list[dict] = []
+    edges_json: list[dict] = []
+    if selected_tp:
+        nodes = db.scalars(
+            select(BomNode)
+            .where(BomNode.company_id == c.id, BomNode.tp_code == selected_tp)
+            .order_by(BomNode.level, BomNode.material)
+        ).all()
+        edges = db.scalars(
+            select(BomEdge)
+            .where(BomEdge.company_id == c.id, BomEdge.tp_code == selected_tp)
+        ).all()
+        nodes_json = [
+            {
+                "material": n.material,
+                "description": n.description or "",
+                "level": n.level,
+                "category": n.category or "",
+            }
+            for n in nodes
+        ]
+        edges_json = [
+            {"src": e.src, "dst": e.dst, "norm": e.norm}
+            for e in edges
+        ]
+
+    return request.app.state.render(
+        request, "insights/bom.html",
+        company=c, gallery=gallery, selected_tp=selected_tp,
+        nodes=nodes, edges=edges,
+        nodes_json=nodes_json, edges_json=edges_json,
     )
 
 

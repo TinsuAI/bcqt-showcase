@@ -218,6 +218,35 @@ class BomCycleEdge(Base):
     produced: Mapped[float] = mapped_column(Float, default=0.0)
 
 
+class BomNode(Base):
+    """Node trong đồ thị BOM curated — pre-computed cho 6 TP đại diện."""
+
+    __tablename__ = "bom_nodes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    tp_code: Mapped[str] = mapped_column(String(64), index=True)
+    material: Mapped[str] = mapped_column(String(64))
+    description: Mapped[str | None] = mapped_column(String(512))
+    level: Mapped[int] = mapped_column(Integer)  # 0=TP root, 1=BTP/L1 NVL, 2=L2 NVL beneath BTP
+    category: Mapped[str | None] = mapped_column(String(32))  # NVL/BTP_SX/BTP_NM/TP
+
+
+class BomEdge(Base):
+    """Cạnh trong đồ thị BOM curated — output ← input với norm."""
+
+    __tablename__ = "bom_edges"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    tp_code: Mapped[str] = mapped_column(String(64), index=True)
+    src: Mapped[str] = mapped_column(String(64))  # parent (output)
+    dst: Mapped[str] = mapped_column(String(64))  # child (input)
+    norm: Mapped[float] = mapped_column(Float, default=0.0)
+    consumed: Mapped[float] = mapped_column(Float, default=0.0)
+    produced: Mapped[float] = mapped_column(Float, default=0.0)
+
+
 class PhaseArtifact(Base):
     """File output mỗi phase tạo ra — có thể tải về."""
 
