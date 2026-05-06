@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}P3 — Audit chất lượng — {{ company.name }}{% endblock %}
+
+{% block content %}
+{% include "phases/_phase_head.html" %}
+
+<section class="section">
+    <div class="section-head">
+        <h2>13 test nội bộ + 5 cross-check</h2>
+        <div class="meta">T01-T13: kiểm tra trong từng nguồn. X01-X05: đối chiếu giữa các nguồn (MB51 vs MB5B, MB51 vs BCCT).</div>
+    </div>
+    <div class="grid-3">
+        {% for s in summary %}
+        <a class="card card-muted" href="/c/{{ company.slug }}/phase/3?test={{ s.code }}" style="display:block;">
+            <div class="row-between">
+                <h3 class="mono">{{ s.code }}</h3>
+                <span class="badge {% if s.critical > 0 %}critical{% elif s.warning > 0 %}warning{% else %}neutral{% endif %}">{{ s.count }}</span>
+            </div>
+            <p class="small" style="margin-top: 8px;">{{ s.name }}</p>
+            <div class="row" style="gap: 6px; margin-top: 12px;">
+                {% if s.critical > 0 %}<span class="badge critical">{{ s.critical }} critical</span>{% endif %}
+                {% if s.warning > 0 %}<span class="badge warning">{{ s.warning }} warn</span>{% endif %}
+                {% if s.info > 0 %}<span class="badge info">{{ s.info }} info</span>{% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+{% if selected_test %}
+<section class="section">
+    <div class="section-head">
+        <h2>Chi tiết — {{ selected_test }}</h2>
+        <div class="meta">50 dòng đầu.</div>
+    </div>
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr><th>Mã</th><th>Mức độ</th><th>Tên test</th><th>Detail</th></tr>
+            </thead>
+            <tbody>
+                {% for f in findings %}
+                <tr>
+                    <td class="mono">{{ f.material or "—" }}</td>
+                    <td><span class="badge {{ f.severity }}">{{ f.severity }}</span></td>
+                    <td class="small">{{ f.test_name }}</td>
+                    <td class="small mono" style="max-width: 600px; word-break: break-word;">{{ f.detail[:200] if f.detail else "" }}</td>
+                </tr>
+                {% endfor %}
+                {% if not findings %}<tr><td colspan="4" class="muted small" style="text-align:center; padding: 24px;">Không có finding.</td></tr>{% endif %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

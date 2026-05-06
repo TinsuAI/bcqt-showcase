@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}P5 — Mẫu quyết toán — {{ company.name }}{% endblock %}
+
+{% block content %}
+{% include "phases/_phase_head.html" %}
+
+<section class="section">
+    <div class="metric-strip kpi-glow">
+        <div class="metric primary"><div class="label">Mẫu 15 — NVL</div><div class="value">{{ counts.m15 | num }}</div><div class="delta">dòng (mã NVL)</div></div>
+        <div class="metric success"><div class="label">Mẫu 15a — TP XK</div><div class="value">{{ counts.m15a | num }}</div><div class="delta">mã thành phẩm</div></div>
+        <div class="metric"><div class="label">Mẫu 16 — định mức</div><div class="value">{{ counts.m16 | num }}</div><div class="delta">{{ counts.tp_xk | num }} TP × NVL gốc</div></div>
+        <div class="metric warning"><div class="label">Vòng tròn sản xuất</div><div class="value">{{ n_cycles }}</div><div class="delta">{{ n_cycle_nodes }} mã trong cycle · <a href="/c/{{ company.slug }}/phase/5/cycles">xem →</a></div></div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="row-between" style="margin-bottom: 16px; flex-wrap: wrap;">
+        <div class="tabs">
+            <a class="tab {% if form == 'm15' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m15">Mẫu 15 — NVL</a>
+            <a class="tab {% if form == 'm15a' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m15a">Mẫu 15a — TP</a>
+            <a class="tab {% if form == 'm16' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m16">Mẫu 16 — Định mức</a>
+        </div>
+        <form action="/c/{{ company.slug }}/phase/5" method="get" style="display: flex; gap: 8px;">
+            <input type="hidden" name="form" value="{{ form }}">
+            <input class="input" type="search" name="q" placeholder="Tìm theo mã…" value="{{ q }}" style="min-width: 220px;">
+            <button class="btn btn-ghost" type="submit">Tìm</button>
+        </form>
+    </div>
+
+    <div class="table-wrap">
+        {% if form == 'm15' %}
+        <table class="data">
+            <thead><tr>
+                <th>Mã NVL</th><th>Tên</th><th>UOM</th>
+                <th class="num">Đầu kỳ</th><th class="num">Nhập</th>
+                <th class="num">Xuất SX</th><th class="num">Xuất khác</th><th class="num">Cuối kỳ</th>
+            </tr></thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="mono">{{ r.material }}</td>
+                    <td class="small">{{ r.description or "" }}</td>
+                    <td>{{ r.uom or "" }}</td>
+                    <td class="num">{{ r.ton_dau_ky | num }}</td>
+                    <td class="num">{{ r.nhap_trong_ky | num }}</td>
+                    <td class="num">{{ r.xuat_san_xuat | num }}</td>
+                    <td class="num">{{ r.xuat_khac | num }}</td>
+                    <td class="num">{{ r.ton_cuoi_ky | num }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif form == 'm15a' %}
+        <table class="data">
+            <thead><tr>
+                <th>Mã TP</th><th>Tên</th><th>UOM</th>
+                <th class="num">Đầu kỳ</th><th class="num">Nhập kho</th>
+                <th class="num">Xuất khẩu</th><th class="num">Xuất khác</th><th class="num">Cuối kỳ</th>
+            </tr></thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="mono">{{ r.material }}</td>
+                    <td class="small">{{ r.description or "" }}</td>
+                    <td>{{ r.uom or "" }}</td>
+                    <td class="num">{{ r.ton_dau_ky | num }}</td>
+                    <td class="num">{{ r.nhap_kho | num }}</td>
+                    <td class="num">{{ r.xuat_khau | num }}</td>
+                    <td class="num">{{ r.xuat_khac | num }}</td>
+                    <td class="num">{{ r.ton_cuoi_ky | num }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <table class="data">
+            <thead><tr>
+                <th>Mã TP XK</th><th>Tên TP</th><th>UOM TP</th>
+                <th>Mã NVL</th><th>Tên NVL</th><th>UOM NVL</th>
+                <th class="num">Định mức</th><th>Ghi chú</th>
+            </tr></thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="mono">{{ r.tp_code }}</td>
+                    <td class="small">{{ r.tp_name or "" }}</td>
+                    <td>{{ r.tp_uom or "" }}</td>
+                    <td class="mono">{{ r.nvl_code }}</td>
+                    <td class="small">{{ r.nvl_name or "" }}</td>
+                    <td>{{ r.nvl_uom or "" }}</td>
+                    <td class="num">{{ r.norm | num(6) }}</td>
+                    <td class="small muted">{{ r.note or "" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    <p class="tiny muted" style="margin-top: 10px;">Hiển thị tối đa 100 dòng. Dùng ô tìm kiếm để lọc theo mã.</p>
+</section>
+{% endblock %}

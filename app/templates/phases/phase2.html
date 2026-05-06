@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}P2 — Phân tích & bổ sung — {{ company.name }}{% endblock %}
+
+{% block content %}
+{% include "phases/_phase_head.html" %}
+
+<section class="section">
+    <div class="section-head">
+        <h2>Phân loại Material Master</h2>
+        <div class="meta">Dùng TK kế toán làm gốc, Material Type của SAP để xác minh. Mâu thuẫn cờ riêng để Johnson xác nhận.</div>
+    </div>
+    <div class="grid-2">
+        <div class="card">
+            <h3>Theo loại vật tư (NVL/BTP/TP/CCDC)</h3>
+            <div id="chart-by-cat" style="width:100%; height: 280px; margin-top: 16px;"></div>
+        </div>
+        <div class="card">
+            <h3>Theo Material Type SAP (ROH/HALB/FERT/ZCON)</h3>
+            <div id="chart-by-type" style="width:100%; height: 280px; margin-top: 16px;"></div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Mâu thuẫn phân loại — {{ conflicts_count | num }} mã</h2>
+        <div class="meta">Khi TK kế toán nói khác với Material Type. Đa phần do master data không nhất quán. Phải hỏi Johnson trước khi sang Phase 5.</div>
+    </div>
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr><th>Mã</th><th>Mô tả</th><th>UOM</th><th>Type</th><th>TK kế toán</th><th>Phân loại đề xuất</th></tr>
+            </thead>
+            <tbody>
+                {% for m in sample_conflicts %}
+                <tr>
+                    <td class="mono">{{ m.code }}</td>
+                    <td class="small">{{ m.description or "" }}</td>
+                    <td>{{ m.uom or "" }}</td>
+                    <td><span class="badge neutral">{{ m.material_type or "—" }}</span></td>
+                    <td class="mono">{{ m.gl_account or "—" }}</td>
+                    <td><span class="badge warning">{{ m.category or "—" }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.addEventListener("load", () => {
+    if (typeof echarts === "undefined") return;
+    const cs = getComputedStyle(document.body);
+    const colors = ["#10b981", "#06b6d4", "#f59e0b", "#a78bfa", "#f472b6", "#94a3b8"];
+    const fg = cs.getPropertyValue("--foreground").trim();
+
+    const cat = {{ by_category | tojson }};
+    const type = {{ by_type | tojson }};
+
+    const opt = (data, key) => ({
+        tooltip: { trigger: "item" },
+        legend: { bottom: 0, textStyle: { color: fg } },
+        series: [{
+            type: "pie", radius: ["48%", "78%"],
+            avoidLabelOverlap: true,
+            label: { show: true, formatter: "{b}\n{c}", color: fg, fontSize: 11 },
+            data: data.map((d, i) => ({ name: d[key], value: d.count, itemStyle: { color: colors[i % colors.length] } })),
+        }],
+    });
+
+    const c1 = echarts.init(document.getElementById("chart-by-cat"));
+    c1.setOption(opt(cat, "category"));
+    const c2 = echarts.init(document.getElementById("chart-by-type"));
+    c2.setOption(opt(type, "type"));
+
+    window.addEventListener("resize", () => { c1.resize(); c2.resize(); });
+    window.addEventListener("theme-changed", () => { setTimeout(() => location.reload(), 50); });
+});
+</script>
+{% endblock %}

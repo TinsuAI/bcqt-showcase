@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}BCQT Showcase — Demo báo cáo quyết toán hải quan{% endblock %}
+
+{% block content %}
+<section class="hero fade-in">
+    <span class="hero-eyebrow">● Pipeline 6 giai đoạn từ thô → mẫu hải quan</span>
+    <h1>Quyết toán hải quan <span class="accent">không còn</span> là hộp đen.</h1>
+    <p>
+        Từ 243.000 giao dịch SAP thô đến 3 mẫu nộp Hải quan (Mẫu 15 / 15a / 16) —
+        showcase pipeline xử lý dữ liệu, audit chéo và lập định mức thực tế của Trọng Tín
+        cho doanh nghiệp chế xuất tại Việt Nam.
+    </p>
+    <div class="hero-actions">
+        {% for c in companies %}{% if loop.first %}
+        <a class="btn btn-primary" href="/c/{{ c.slug }}">Xem demo công ty A &rarr;</a>
+        {% endif %}{% endfor %}
+        <a class="btn btn-ghost" href="#how-it-works">Cách thức hoạt động</a>
+    </div>
+</section>
+
+<section class="section">
+    <div class="metric-strip kpi-glow">
+        <div class="metric primary"><div class="label">Doanh nghiệp demo</div><div class="value">{{ stats.total_companies }}</div></div>
+        <div class="metric"><div class="label">Phase pipeline</div><div class="value">{{ stats.phases }}</div></div>
+        <div class="metric"><div class="label">Văn bản tham chiếu</div><div class="value">{{ stats.regulations }}+</div><div class="delta">TT 38, TT 39, TT 121, QĐ 1357, CV 3304</div></div>
+        <div class="metric success"><div class="label">Test validate cuối</div><div class="value">9/9</div><div class="delta">Pass — traceability 99,4%</div></div>
+    </div>
+</section>
+
+<section class="section" id="how-it-works">
+    <div class="section-head">
+        <h2>6 giai đoạn pipeline</h2>
+        <div class="meta">Mỗi giai đoạn để lại artefact kiểm tra được — đây là điểm khác biệt với cách làm Excel thủ công.</div>
+    </div>
+    <div class="phase-rail">
+        {% set phase_meta = [
+            ("Chuẩn hoá", "Clean MB51, MB5B, BCCT", 1, "Phase 1"),
+            ("Bổ sung", "Material Master, phân loại", 2, "Phase 2"),
+            ("Audit", "13 test + 5 cross-check", 3, "Phase 3"),
+            ("Điều tra", "4 inv. cho mã bất thường", 4, "Phase 4"),
+            ("Mẫu QT", "Mẫu 15 / 15a / 16", 5, "Phase 5"),
+            ("Validate", "9 test mass-conservation", 6, "Phase 6")
+        ] %}
+        {% for c in companies %}{% if loop.first %}
+            {% for name, desc, no, label in phase_meta %}
+            <a class="phase-step done" href="/c/{{ c.slug }}/phase/{{ no }}">
+                <h4>{{ label }}: {{ name }}</h4>
+                <div class="meta">{{ desc }}</div>
+            </a>
+            {% endfor %}
+        {% endif %}{% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Doanh nghiệp đang dùng</h2>
+        <div class="meta">Multi-tenant — mỗi doanh nghiệp có pipeline riêng. Số liệu thật ẩn danh.</div>
+    </div>
+    <div class="grid-3">
+        {% for c in companies %}
+        <a class="card" href="/c/{{ c.slug }}">
+            <div class="row-between">
+                <h3>{{ c.name }}</h3>
+                {% if loop.first %}<span class="badge success">Live</span>{% else %}<span class="badge neutral">Mock</span>{% endif %}
+            </div>
+            <div class="meta" style="margin-top:6px">{{ c.industry or "—" }} · {{ c.province or "—" }}</div>
+            <p class="small muted" style="margin-top:14px">{{ c.summary or "" }}</p>
+            <div class="row" style="margin-top:14px; gap: 8px;">
+                <span class="badge info">{{ c.customs_office or "—" }}</span>
+                {% if c.operations_start %}<span class="badge neutral">HĐ từ {{ c.operations_start.strftime("%m/%Y") }}</span>{% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Khung pháp lý áp dụng</h2>
+        <div class="meta">Tất cả output đều quy chiếu được về văn bản gốc. Không có gì là "khoa học huyền bí".</div>
+    </div>
+    <div class="grid-2">
+        <div class="card">
+            <h3>Báo cáo quyết toán</h3>
+            <ul class="stack" style="margin-top:12px; gap: 8px; list-style: none;">
+                <li class="small">• <strong>TT 38/2015/TT-BTC</strong> Điều 55 — định mức thực tế</li>
+                <li class="small">• <strong>TT 39/2018/TT-BTC</strong> Khoản 35 Điều 1 — sửa đổi Điều 55</li>
+                <li class="small">• <strong>TT 121/2025/TT-BTC</strong> — quy đổi hàng dở dang (hiệu lực 01/02/2026)</li>
+                <li class="small">• <strong>Phụ lục V Mẫu 15/15a</strong> — biểu mẫu nhập-xuất-tồn NVL/TP</li>
+                <li class="small">• <strong>Phụ lục II Mẫu 16/ĐMTT</strong> — định mức thực tế</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Phân loại loại hình & vật tư</h3>
+            <ul class="stack" style="margin-top:12px; gap: 8px; list-style: none;">
+                <li class="small">• <strong>QĐ 1357/QĐ-TCHQ</strong> — bảng mã loại hình (40 mã: 16 XK + 24 NK)</li>
+                <li class="small">• <strong>CV 3304/TCHQ-GSQL</strong> — phân biệt CCDC vs vật tư tiêu hao</li>
+                <li class="small">• <strong>SAP standard MvT</strong> — 101/261/901/902/122/123…</li>
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}

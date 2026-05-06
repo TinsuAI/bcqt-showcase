@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}P1 — Chuẩn hoá dữ liệu — {{ company.name }}{% endblock %}
+
+{% block content %}
+{% include "phases/_phase_head.html" %}
+
+<section class="section">
+    <div class="section-head">
+        <h2>Nguồn dữ liệu thô</h2>
+        <div class="meta">3 nguồn: SAP MB51 (chuyển động kho), SAP MB5B (tồn kho + master data), VNACCS BCCT (báo cáo chi tiết tờ khai).</div>
+    </div>
+    <div class="grid-3">
+        {% for f in raw_files %}
+        <div class="card">
+            <div class="row-between">
+                <h3 class="mono">{{ f.file_kind | upper }}</h3>
+                <span class="badge info">{{ (f.size_bytes / 1048576) | round(1) }} MB</span>
+            </div>
+            <p class="small muted" style="margin-top: 8px;">{{ f.filename }}</p>
+            <div class="metric-strip" style="margin-top: 14px;">
+                <div class="metric">
+                    <div class="label">Dòng thô</div>
+                    <div class="value">{{ f.rows_raw | num }}</div>
+                </div>
+                <div class="metric success">
+                    <div class="label">Sau làm sạch</div>
+                    <div class="value">{{ f.rows_clean | num }}</div>
+                </div>
+            </div>
+            {% if f.note %}<p class="tiny muted" style="margin-top: 8px;">{{ f.note }}</p>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Mẫu dữ liệu MB51 sau làm sạch</h2>
+        <div class="meta">20 dòng đầu — đã rename cột (TQ → EN), convert serial date, dedup.</div>
+    </div>
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Ngày</th><th>Material</th><th>MvT</th>
+                    <th class="num">SL</th><th>UOM</th><th>PO</th><th>Order</th><th>TK</th><th class="num">VND</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in sample_mb51 %}
+                <tr>
+                    <td class="mono">{{ r.posting_date or "" }}</td>
+                    <td class="mono">{{ r.material }}</td>
+                    <td><span class="badge neutral">{{ r.movement_type }}</span></td>
+                    <td class="num">{{ r.quantity | num }}</td>
+                    <td>{{ r.uom or "" }}</td>
+                    <td class="mono">{{ r.purchase_order or "" }}</td>
+                    <td class="mono">{{ r.production_order or "" }}</td>
+                    <td class="mono">{{ r.gl_account or "" }}</td>
+                    <td class="num">{{ r.amount_vnd | num }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Mẫu BCCT (tờ khai hải quan VNACCS)</h2>
+        <div class="meta">Mã loại hình kiểm tra theo bảng QĐ 1357/QĐ-TCHQ. Mã không có trong bảng → raise hard error.</div>
+    </div>
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Ngày</th><th>Số TK</th><th>Loại hình</th>
+                    <th>Hướng</th><th>Material</th><th class="num">SL</th><th>UOM</th><th class="num">USD</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in sample_bcct %}
+                <tr>
+                    <td class="mono">{{ r.declaration_date or "" }}</td>
+                    <td class="mono">{{ r.declaration_no or "" }}</td>
+                    <td><span class="badge {% if r.direction == 'import' %}info{% else %}success{% endif %}">{{ r.customs_type or "—" }}</span></td>
+                    <td>{{ r.direction or "" }}</td>
+                    <td class="mono">{{ r.material or "" }}</td>
+                    <td class="num">{{ r.quantity | num }}</td>
+                    <td>{{ r.uom or "" }}</td>
+                    <td class="num">{{ r.amount_usd | num }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}P4 — Điều tra bất thường — {{ company.name }}{% endblock %}
+
+{% block content %}
+{% include "phases/_phase_head.html" %}
+
+<section class="section">
+    <div class="section-head">
+        <h2>4 cuộc điều tra</h2>
+        <div class="meta">Mỗi điều tra giải quyết một loại bất thường phát hiện ở Phase 3. Kết quả → cập nhật rule cho Phase 5.</div>
+    </div>
+    <div class="stack">
+        {% for inv in investigations %}
+        <div class="card">
+            <div class="row-between">
+                <div class="row" style="gap: 10px;">
+                    <span class="badge primary mono" style="background: var(--primary-soft); color: var(--primary);">{{ inv.inv_code }}</span>
+                    <h3>{{ inv.title }}</h3>
+                </div>
+                <span class="badge {% if inv.status == 'done' %}success{% else %}warning{% endif %}">{{ inv.status }}</span>
+            </div>
+            <div class="grid-2" style="margin-top: 18px;">
+                <div>
+                    <div class="label small muted" style="text-transform: uppercase; letter-spacing: 0.05em;">Tóm tắt</div>
+                    <p class="small" style="margin-top: 6px;">{{ inv.summary }}</p>
+                </div>
+                <div>
+                    <div class="label small muted" style="text-transform: uppercase; letter-spacing: 0.05em;">Kết luận</div>
+                    <p class="small" style="margin-top: 6px;">{{ inv.resolution }}</p>
+                </div>
+            </div>
+            <div class="row" style="margin-top: 14px;">
+                <span class="badge neutral">{{ inv.materials_count | num }} mã</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

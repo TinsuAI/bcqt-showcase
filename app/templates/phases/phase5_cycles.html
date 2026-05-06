@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Vòng tròn sản xuất — {{ company.name }}{% endblock %}
+
+{% block content %}
+<section class="fade-in stack">
+    <div class="row" style="gap: 10px;">
+        <a href="/c/{{ company.slug }}/phase/5" class="badge neutral">← Phase 5</a>
+        <span class="badge warning">{{ sccs|length }} SCC · {{ sccs|sum(attribute='size') }} mã</span>
+    </div>
+    <div>
+        <h1 style="font-size: 28px; letter-spacing: -0.02em;">Vòng tròn sản xuất TP A → B → C</h1>
+        <p class="muted small" style="margin-top: 6px; max-width: 80ch;">
+            Khi một mã TP vừa là đầu ra của lệnh SX này vừa là đầu vào của lệnh SX khác cùng nhóm,
+            topological sort bị deadlock. Đây là hiện tượng phổ biến với "chuyển đổi phiên bản"
+            (vd phiên bản nội địa → phiên bản US → phiên bản EU). Pipeline giải bằng hệ phương trình
+            tuyến tính (I − C)·X = K trên mỗi SCC.
+        </p>
+    </div>
+</section>
+
+<section class="section stack">
+    {% for s in sccs %}
+    <div class="card scc-card">
+        <div class="row-between">
+            <h4>
+                <span class="badge {% if s.size >= 4 %}critical{% elif s.size == 3 %}warning{% else %}info{% endif %}">{{ s.size }} mã</span>
+                <span class="mono">{{ s.label }}</span>
+            </h4>
+            <div class="row" style="gap: 8px;">
+                <span class="badge neutral">{{ s.edges|length }} cạnh</span>
+            </div>
+        </div>
+        <div class="scc-nodes">
+            {% for n in s.nodes %}<span class="scc-node">{{ n }}</span>{% endfor %}
+        </div>
+        {% if s.edges %}
+        <div class="scc-edges">
+            <div class="small muted" style="margin-bottom: 6px;">Cạnh (nguồn → đích, định mức):</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                {% for e in s.edges %}
+                <code class="tiny">{{ e.src }} → {{ e.dst }}: {{ e.norm | num(4) }}</code>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        <div id="graph-{{ loop.index }}" class="cycle-graph" style="margin-top: 14px;" data-scc='{{ {"nodes": s.nodes, "edges": s.edges} | tojson }}'></div>
+    </div>
+    {% endfor %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.addEventListener("load", () => {
+    if (typeof echarts === "undefined") return;
+    const cs = getComputedStyle(document.body);
+    const fg = cs.getPropertyValue("--foreground").trim();
+    const primary = cs.getPropertyValue("--primary").trim();
+
+    document.querySelectorAll(".cycle-graph").forEach(el => {
+        const data = JSON.parse(el.dataset.scc);
+        const chart = echarts.init(el);
+        const nodes = data.nodes.map(n => ({ name: n, symbolSize: 50, label: { color: fg, fontFamily: "IBM Plex Mono", fontSize: 11 } }));
+        const links = data.edges.map(e => ({
+            source: e.src,
+            target: e.dst,
+            value: e.norm,
+            label: { show: true, formatter: e.norm.toFixed(3), fontSize: 10, color: fg },
+            lineStyle: { color: primary, opacity: 0.7, width: 1.5, curveness: 0.25 },
+        }));
+        chart.setOption({
+            tooltip: {},
+            series: [{
+                type: "graph", layout: "circular",
+                roam: false, animation: true,
+                symbol: "circle",
+                itemStyle: { color: primary, opacity: 0.85, borderColor: fg, borderWidth: 1 },
+                label: { show: true, position: "right" },
+                edgeSymbol: ["none", "arrow"],
+                edgeSymbolSize: 8,
+                data: nodes, links: links,
+            }],
+        });
+        window.addEventListener("resize", () => chart.resize());
+    });
+});
+</script>
+{% endblock %}

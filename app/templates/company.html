@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} — BCQT Showcase{% endblock %}
+
+{% block content %}
+<section class="fade-in stack">
+    <div class="row" style="gap: 10px;">
+        <span class="badge {% if company.is_demo %}neutral{% else %}success{% endif %}">{% if company.is_demo %}Demo (số liệu ẩn danh){% else %}Live{% endif %}</span>
+        <span class="badge info">{{ company.customs_office or "—" }}</span>
+    </div>
+    <div>
+        <h1 style="font-size: 32px; letter-spacing: -0.02em;">{{ company.name }}</h1>
+        <p class="muted" style="margin-top: 6px;">{{ company.industry or "—" }} · {{ company.province or "—" }} · MST {{ company.tax_code or "—" }}</p>
+    </div>
+    <p class="small">{{ company.summary or "" }}</p>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>6 giai đoạn pipeline</h2>
+        <div class="meta">Click vào mỗi step để xem chi tiết.</div>
+    </div>
+    <div class="phase-rail">
+        {% for run in phase_runs %}
+        <a class="phase-step {% if run.status == 'done' %}done{% elif run.status == 'running' %}active{% endif %}" href="/c/{{ company.slug }}/phase/{{ run.phase_no }}">
+            <h4>{{ run.name }}</h4>
+            <div class="meta">{{ run.summary[:100] if run.summary else "" }}{% if run.summary and run.summary|length > 100 %}…{% endif %}</div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>KPI tổng kết</h2>
+        <div class="meta">Trích từ metrics_json mỗi phase.</div>
+    </div>
+    <div class="stack">
+        {% for run in phase_runs %}
+        {% set m = run.metrics_json | metrics %}
+        <div class="card">
+            <div class="row-between">
+                <div>
+                    <div class="row" style="gap: 10px;">
+                        <span class="badge {% if run.status == 'done' %}success{% else %}neutral{% endif %}">P{{ run.phase_no }}</span>
+                        <h3>{{ run.name }}</h3>
+                    </div>
+                    <p class="small muted" style="margin-top: 6px;">{{ run.summary }}</p>
+                </div>
+                <a class="btn btn-ghost" href="/c/{{ company.slug }}/phase/{{ run.phase_no }}">Mở →</a>
+            </div>
+            {% if m %}
+            <div class="metric-strip" style="margin-top: 16px;">
+                {% for k, v in m.items() %}
+                <div class="metric">
+                    <div class="label">{{ k.replace('_', ' ') }}</div>
+                    <div class="value">{{ v | num }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

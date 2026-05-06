@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}P6 — Validate — {{ company.name }}{% endblock %}
+
+{% block content %}
+{% include "phases/_phase_head.html" %}
+
+<section class="section">
+    <div class="metric-strip kpi-glow">
+        <div class="metric success"><div class="label">Tổng test</div><div class="value">{{ n_pass }}/{{ n_total }}</div><div class="delta">PASS</div></div>
+        <div class="metric"><div class="label">Khung pháp lý</div><div class="value">TT 39</div><div class="delta">/2018/TT-BTC</div></div>
+        <div class="metric primary"><div class="label">Traceability NVL</div><div class="value">99,4%</div><div class="delta">4.686.078 / 4.716.730 đơn vị giải trình được</div></div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Kết quả validate</h2>
+        <div class="meta">Mỗi test áp một bất biến (mass conservation, khớp HQ, không âm…). Fail ở bất kỳ test nào → quay lại Phase 5.</div>
+    </div>
+    <div class="table-wrap">
+        <table class="data">
+            <thead><tr><th>Mã</th><th>Tên test</th><th>Kết quả</th><th>Kỳ vọng</th><th>Thực tế</th><th class="num">Sai số %</th></tr></thead>
+            <tbody>
+                {% for r in results %}
+                <tr>
+                    <td class="mono">{{ r.test_code }}</td>
+                    <td class="small">{{ r.test_name }}</td>
+                    <td><span class="badge {% if r.status == 'pass' %}success{% else %}critical{% endif %}">{{ r.status | upper }}</span></td>
+                    <td class="mono small">{{ r.expected or "" }}</td>
+                    <td class="mono small">{{ r.actual or "" }}</td>
+                    <td class="num">{{ r.delta_pct | pct(2) if r.delta_pct is not none else "—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
