@@ -7,30 +7,7 @@
 
 {% block content %}
 {% include "phases/_phase_head.html" %}
-
-<section class="section">
-    <div class="section-head">
-        <h2>Nguồn dữ liệu thô</h2>
-        <div class="meta">3 nguồn: SAP MB51 (chuyển động kho), SAP MB5B (tồn kho + master data), VNACCS BCCT (báo cáo chi tiết tờ khai).</div>
-    </div>
-    <div class="grid-3">
-        {% for f in raw_files %}
-        <div class="panel">
-            <div class="panel-head">
-                <h3 class="mono">{{ f.file_kind | upper }}</h3>
-                <span class="badge neutral">{{ (f.size_bytes / 1048576) | round(1) }} MB</span>
-            </div>
-            <div class="panel-body">
-                <p class="tiny muted mono">{{ f.filename }}</p>
-                <div class="kpi" style="margin-top: 10px;">
-                    <div class="kpi-cell"><div class="k">Dòng thô</div><div class="v">{{ f.rows_raw | num }}</div></div>
-                    <div class="kpi-cell success"><div class="k">Sau làm sạch</div><div class="v">{{ f.rows_clean | num }}</div></div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</section>
+{% include "phases/_io_block.html" %}
 
 <section class="section">
     <div class="section-head">

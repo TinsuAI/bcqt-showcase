@@ -218,6 +218,40 @@ class BomCycleEdge(Base):
     produced: Mapped[float] = mapped_column(Float, default=0.0)
 
 
+class PhaseArtifact(Base):
+    """File output mỗi phase tạo ra — có thể tải về."""
+
+    __tablename__ = "phase_artifacts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    phase_no: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(16))  # input / output
+    label: Mapped[str] = mapped_column(String(255))
+    filename: Mapped[str] = mapped_column(String(255))
+    rows: Mapped[int | None] = mapped_column(Integer)
+    size_bytes: Mapped[int | None] = mapped_column(Integer)
+    note: Mapped[str | None] = mapped_column(String(255))
+
+
+class PipelineRun(Base):
+    """Lịch sử chạy pipeline — static record, có version."""
+
+    __tablename__ = "pipeline_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    run_no: Mapped[int] = mapped_column(Integer)
+    version: Mapped[str] = mapped_column(String(16))
+    phases_label: Mapped[str] = mapped_column(String(64))  # "P1-P6", "P5", ...
+    started_at: Mapped[datetime] = mapped_column(DateTime)
+    duration_s: Mapped[int] = mapped_column(Integer)
+    actor: Mapped[str] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(16))  # done / failed / partial
+    artifacts_count: Mapped[int] = mapped_column(Integer, default=0)
+    note: Mapped[str | None] = mapped_column(String(512))
+
+
 class NvlTraceability(Base):
     """Truy vết NVL — mỗi mã: xuất SX → vào TP / khoá BTP / khoá TP / còn lại."""
 

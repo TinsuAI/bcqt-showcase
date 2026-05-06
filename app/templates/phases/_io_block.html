@@ -1,0 +1,103 @@
+{# Input/Output/Run block for phase pages #}
+{% macro size_label(b) -%}
+{% if not b %}—{% elif b > 1048576 %}{{ (b / 1048576) | round(1) }} MB{% elif b > 1024 %}{{ (b / 1024) | round(1) }} KB{% else %}{{ b }} B{% endif %}
+{%- endmacro %}
+
+<section class="section">
+    <div class="io-grid">
+        <div class="panel">
+            <div class="panel-head">
+                <div class="row" style="gap: 8px;">
+                    <span class="badge info mono tiny">INPUT</span>
+                    <h3>Đầu vào</h3>
+                </div>
+                <span class="meta">{{ inputs | length }} mục</span>
+            </div>
+            <div class="panel-body dense">
+                {% for a in inputs %}
+                <div class="row-line io-row">
+                    <span class="io-icon">▸</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="small" style="font-weight: 500;">{{ a.label }}</div>
+                        <div class="tiny muted mono">{{ a.filename }}</div>
+                        {% if a.note %}<div class="tiny muted">{{ a.note }}</div>{% endif %}
+                    </div>
+                    <div class="tiny muted mono" style="text-align: right; min-width: 100px;">
+                        {% if a.rows %}{{ a.rows | num }} dòng{% endif %}
+                        {% if a.size_bytes %}<br>{{ size_label(a.size_bytes) }}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not inputs %}<div class="no-data">Không có input.</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="panel run-panel">
+            <div class="panel-head">
+                <div class="row" style="gap: 8px;">
+                    <span class="badge primary mono tiny">RUN</span>
+                    <h3>Lần chạy gần nhất</h3>
+                </div>
+            </div>
+            <div class="panel-body">
+                {% if last_run %}
+                <div class="run-stats">
+                    <div class="run-stat">
+                        <div class="rs-k">Phiên bản</div>
+                        <div class="rs-v mono">{{ last_run.version }}</div>
+                    </div>
+                    <div class="run-stat">
+                        <div class="rs-k">Thời điểm</div>
+                        <div class="rs-v mono">{{ last_run.started_at.strftime("%d/%m %H:%M") }}</div>
+                    </div>
+                    <div class="run-stat">
+                        <div class="rs-k">Thời lượng</div>
+                        <div class="rs-v mono">{{ "%dm %ds" | format(last_run.duration_s // 60, last_run.duration_s % 60) }}</div>
+                    </div>
+                    <div class="run-stat">
+                        <div class="rs-k">Trạng thái</div>
+                        <div class="rs-v"><span class="status done">{{ last_run.status }}</span></div>
+                    </div>
+                    <div class="run-stat" style="grid-column: 1 / -1;">
+                        <div class="rs-k">Người chạy</div>
+                        <div class="rs-v small">{{ last_run.actor }}</div>
+                    </div>
+                </div>
+                {% if last_run.note %}<p class="tiny muted" style="margin-top: 10px;">{{ last_run.note }}</p>{% endif %}
+                <div class="row" style="margin-top: 12px;">
+                    <a class="btn btn-sm" href="/c/{{ company.slug }}/runs">Xem toàn bộ lịch sử →</a>
+                </div>
+                {% else %}
+                <div class="no-data tiny">Chưa có lần chạy nào.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="row" style="gap: 8px;">
+                    <span class="badge success mono tiny">OUTPUT</span>
+                    <h3>Đầu ra</h3>
+                </div>
+                <span class="meta">{{ outputs | length }} mục</span>
+            </div>
+            <div class="panel-body dense">
+                {% for a in outputs %}
+                <div class="row-line io-row">
+                    <span class="io-icon out">◆</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="small" style="font-weight: 500;">{{ a.label }}</div>
+                        <div class="tiny muted mono">{{ a.filename }}</div>
+                        {% if a.note %}<div class="tiny muted">{{ a.note }}</div>{% endif %}
+                    </div>
+                    <div class="tiny muted mono" style="text-align: right; min-width: 100px;">
+                        {% if a.rows %}{{ a.rows | num }} dòng{% endif %}
+                        {% if a.size_bytes %}<br>{{ size_label(a.size_bytes) }}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not outputs %}<div class="no-data">Không có output.</div>{% endif %}
+            </div>
+        </div>
+    </div>
+</section>

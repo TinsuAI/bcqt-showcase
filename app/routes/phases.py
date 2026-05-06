@@ -19,7 +19,9 @@ from app.models import (
     Mau15aRow,
     Mau16Row,
     Mb51Movement,
+    PhaseArtifact,
     PhaseRun,
+    PipelineRun,
     RawFile,
     ValidationResult,
 )
@@ -31,6 +33,27 @@ router = APIRouter(prefix="/c/{slug}/phase", tags=["phases"])
 def _ctx(db: Session, slug: str) -> tuple[Company, PhaseRun | None]:
     c = get_company_or_404(db, slug)
     return c, None
+
+
+def _io_and_run(db: Session, company_id: int, phase_no: int) -> dict:
+    """Lấy artifacts (input/output) + last run cho 1 phase."""
+    artifacts = db.scalars(
+        select(PhaseArtifact)
+        .where(PhaseArtifact.company_id == company_id, PhaseArtifact.phase_no == phase_no)
+        .order_by(PhaseArtifact.role, PhaseArtifact.id)
+    ).all()
+    inputs = [a for a in artifacts if a.role == "input"]
+    outputs = [a for a in artifacts if a.role == "output"]
+    last_run = db.scalar(
+        select(PipelineRun)
+        .where(
+            PipelineRun.company_id == company_id,
+            PipelineRun.phases_label.contains(f"P{phase_no}"),
+        )
+        .order_by(desc(PipelineRun.started_at))
+        .limit(1)
+    )
+    return {"inputs": inputs, "outputs": outputs, "last_run": last_run}
 
 
 @router.get("/1")
@@ -48,6 +71,7 @@ def phase1(slug: str, request: Request, db: Session = Depends(get_db)):
         request, "phases/phase1.html",
         company=c, run=run, raw_files=raw,
         sample_mb51=sample_mb51, sample_bcct=sample_bcct,
+        **_io_and_run(db, c.id, 1),
     )
 
 
@@ -87,6 +111,7 @@ def phase2(slug: str, request: Request, db: Session = Depends(get_db)):
         company=c, run=run,
         by_category=by_category, by_type=by_type,
         conflicts_count=conflicts, sample_conflicts=sample_conflicts,
+        **_io_and_run(db, c.id, 2),
     )
 
 
@@ -120,6 +145,7 @@ def phase3(slug: str, request: Request, db: Session = Depends(get_db),
     return request.app.state.render(
         request, "phases/phase3.html",
         company=c, run=run, summary=summary, selected_test=test, findings=findings,
+        **_io_and_run(db, c.id, 3),
     )
 
 
@@ -133,6 +159,7 @@ def phase4(slug: str, request: Request, db: Session = Depends(get_db)):
     return request.app.state.render(
         request, "phases/phase4.html",
         company=c, run=run, investigations=invs,
+        **_io_and_run(db, c.id, 4),
     )
 
 
@@ -179,6 +206,7 @@ def phase5(slug: str, request: Request, db: Session = Depends(get_db),
         request, "phases/phase5.html",
         company=c, run=run, counts=counts, form=form, q=q or "", rows=rows,
         n_cycles=n_cycles, n_cycle_nodes=n_cycle_nodes,
+        **_io_and_run(db, c.id, 5),
     )
 
 
@@ -222,4 +250,5 @@ def phase6(slug: str, request: Request, db: Session = Depends(get_db)):
     return request.app.state.render(
         request, "phases/phase6.html",
         company=c, run=run, results=results, n_pass=n_pass, n_total=len(results),
+        **_io_and_run(db, c.id, 6),
     )

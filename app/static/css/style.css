@@ -573,6 +573,38 @@ table.data tr.row-link { cursor: pointer; }
     font-size: 12.5px;
 }
 
+/* ===== I/O block (phase header) ===== */
+.io-grid {
+    display: grid;
+    grid-template-columns: 1fr 240px 1fr;
+    gap: 12px;
+    align-items: stretch;
+}
+@media (max-width: 1024px) {
+    .io-grid { grid-template-columns: 1fr; }
+}
+.io-row { padding: 8px 14px; gap: 8px; }
+.io-icon {
+    color: var(--info); font-family: "IBM Plex Mono", monospace;
+    font-size: 12px; flex: 0 0 auto;
+}
+.io-icon.out { color: var(--success); }
+.run-panel { background: var(--card-strong); }
+.run-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+}
+.run-stat .rs-k {
+    font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--foreground-muted);
+}
+.run-stat .rs-v {
+    font-size: 13px; margin-top: 2px;
+}
+.run-stat .rs-v.mono { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+
 /* ===== Lifecycle viz (NVL trace) ===== */
 .lifecycle { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
 .lc-step {
@@ -639,6 +671,21 @@ table.data tr.row-link { cursor: pointer; }
 @media (max-width: 880px) {
     .lc-row { grid-template-columns: 1fr; }
 }
+
+/* ===== YAML view ===== */
+.yaml-view {
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    overflow: auto;
+    max-height: 600px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--foreground-soft);
+}
+.yaml-view code { white-space: pre; }
 
 /* Hide rail on small */
 @media (max-width: 880px) {

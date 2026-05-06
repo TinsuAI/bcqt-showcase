@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Quy tắc xử lý — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Quy tắc xử lý</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Quy tắc xử lý (read-only)</h1>
+            <div class="meta">
+                Tất cả quy tắc nghiệp vụ pipeline đang áp dụng được lưu thành YAML versioned. Không cho edit qua UI — đảm bảo tính đối chiếu khi thanh tra.
+            </div>
+        </div>
+        <div class="page-actions">
+            <span class="badge neutral">{{ files | length }} file</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="grid-12">
+        <div class="panel">
+            <div class="panel-head">
+                <h3>{% if selected %}{{ selected.title }}{% else %}Chọn file để xem{% endif %}</h3>
+                {% if selected %}
+                <span class="meta mono">{{ selected.key }}.yaml{% if line_count %} · {{ line_count }} dòng{% endif %}</span>
+                {% endif %}
+            </div>
+            <div class="panel-body">
+                {% if selected %}
+                <div class="row" style="gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <span class="badge primary mono">{{ selected.phase }}</span>
+                    {% if selected.regulation %}<span class="badge neutral">{{ selected.regulation }}</span>{% endif %}
+                </div>
+                <p class="small muted" style="margin-bottom: 14px;">{{ selected.subtitle }}</p>
+                {% if yaml_text %}
+                <pre class="yaml-view"><code>{{ yaml_text }}</code></pre>
+                {% else %}
+                <div class="no-data">Không đọc được file YAML.</div>
+                {% endif %}
+                {% else %}
+                <div class="no-data">Chọn 1 file ở danh sách bên phải để xem nội dung.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <aside>
+            <div class="panel">
+                <div class="panel-head"><h3>Files quy tắc</h3></div>
+                <div class="panel-body dense">
+                    {% for f in files %}
+                    <a class="row-line" href="/c/{{ company.slug }}/rules?file={{ f.key }}" style="align-items: flex-start; padding: 10px 14px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="small" style="font-weight: 600; {% if selected and selected.key == f.key %}color: var(--primary);{% endif %}">{{ f.title }}</div>
+                            <div class="tiny muted mono">{{ f.key }}.yaml</div>
+                            <div class="tiny" style="color: var(--foreground-soft); margin-top: 2px;">{{ f.subtitle }}</div>
+                        </div>
+                        <span class="badge primary mono tiny">{{ f.phase }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

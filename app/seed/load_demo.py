@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 
 import pandas as pd
 from sqlalchemy import select
@@ -32,7 +32,9 @@ from app.models import (
     Mau16Row,
     Mb51Movement,
     NvlTraceability,
+    PhaseArtifact,
     PhaseRun,
+    PipelineRun,
     ProcessLog,
     RawFile,
     RiskFinding,
@@ -463,6 +465,95 @@ def seed_bom_cycles(db, company: Company) -> None:
             )
 
 
+def seed_phase_artifacts(db, company: Company) -> None:
+    """File input/output mỗi phase tạo ra — list để show ở per-phase page."""
+    items = [
+        # Phase 1
+        (1, "input", "MB51 thô (SAP)", "2025MB51-V1.XLSX", 243421, 78_000_000, "5 sheet, header TQ"),
+        (1, "input", "MB5B thô (SAP)", "2025MB5B-V1.XLSX", 93527, 12_000_000, "3 sheet, có Material Master"),
+        (1, "input", "BCCT thô (VNACCS)", "BaoCaoHangChiTiet năm 2025.xls", 37000, 26_000_000, "Định dạng .xls cũ"),
+        (1, "output", "MB51 đã sạch", "CLEAN_MB51_SAP.xlsx", 243421, 66_000_000, "Cột EN, dedup"),
+        (1, "output", "MB5B đã sạch (chi tiết)", "CLEAN_MB5B_DETAIL.xlsx", 20064, 1_600_000, None),
+        (1, "output", "MB5B đã sạch (tổng hợp)", "CLEAN_MB5B_SUMMARY.xlsx", 20064, 5_500, None),
+        (1, "output", "BCCT đã sạch", "CLEAN_BCCT.xlsx", 37000, 9_600_000, None),
+        # Phase 2
+        (2, "input", "MB5B Sheet3 (Material Master thô)", "2025MB5B-V1.XLSX#Sheet3", 20130, 0, None),
+        (2, "input", "MB51/MB5B/BCCT đã sạch", "CLEAN_MB51 + CLEAN_MB5B + CLEAN_BCCT", 0, 0, "từ Phase 1"),
+        (2, "output", "Material Master phân loại", "CLEAN_MATERIAL_MASTER.xlsx", 20064, 1_700_000, "5 phân loại NVL/BTP/TP/CCDC"),
+        (2, "output", "MB5B đã enrich (master meta)", "ENRICHED_MB5B.xlsx", 20064, 1_900_000, "100% match"),
+        (2, "output", "MB51 đã enrich", "ENRICHED_MB51.xlsx", 243421, 71_000_000, "74 row null-material"),
+        (2, "output", "Báo cáo mâu thuẫn phân loại", "PHAN_LOAI_MAU_THUAN_JOHNSON.xlsx", 2100, 30_000, "cần khách xác nhận"),
+        # Phase 3
+        (3, "input", "ENRICHED_MB51 + ENRICHED_MB5B + CLEAN_BCCT", "(từ Phase 2)", 0, 0, None),
+        (3, "output", "Audit Phase 3 — 13 test", "AUDIT_PHASE3.xlsx", 18800, 790_000, "T01-T13"),
+        (3, "output", "Cross-check MB51 vs BCCT", "CROSSCHECK_MB51_BAOCAO.xlsx", 5314, 565_000, None),
+        (3, "output", "Cross-check MB51 vs MB5B", "CROSSCHECK_MB51_MB5B.xlsx", 0, 2_300_000, None),
+        # Phase 4
+        (4, "input", "AUDIT_PHASE3 + CROSSCHECK", "(từ Phase 3)", 0, 0, None),
+        (4, "output", "Phase 4 — manual review summary", "MANUAL_REVIEW_SUMMARY.xlsx", 5596, 320_000, "AUTO_OK/EXCLUDE/REVIEW/MANUAL"),
+        (4, "output", "Investigation 4.1-4.4", "PHASE4_INVESTIGATION.xlsx", 5596, 2_600_000, None),
+        (4, "output", "Inv 4.3 — MvT 122 / B13", "INVESTIGATION_43_MVT122_B13.xlsx", 268, 773_000, None),
+        (4, "output", "Inv 4.4 — phân loại tĩnh vs hành vi", "INVESTIGATION_44_STATIC_VS_BEHAVIOR.xlsx", 340, 732_000, None),
+        # Phase 5
+        (5, "input", "ENRICHED_* + Investigation rules", "(từ Phase 2 + Phase 4)", 0, 0, None),
+        (5, "input", "Cấu hình overrides", "settlement_overrides.yaml", 0, 5_000, "T02 + dual-source rules"),
+        (5, "output", "Mẫu 15 — NVL", "Mau_15_NVL_v12.0.csv", 4773, 519_000, "nộp HQ"),
+        (5, "output", "Mẫu 15a — TP XK", "Mau_15a_SP_v12.0.csv", 517, 41_000, "nộp HQ"),
+        (5, "output", "Mẫu 16 — định mức thực tế", "Mau_16_DMTT_v12.0.csv", 42676, 5_000_000, "nộp HQ"),
+        (5, "output", "Hồ sơ giải trình", "HO_SO_GIAI_TRINH_v12.0.xlsx", 0, 6_400_000, "12 sheet — lưu nội bộ"),
+        (5, "output", "Settlement forms (HQ format)", "SETTLEMENT_FORMS_v12.0.xlsx", 0, 0, "định dạng nộp HQ"),
+        # Phase 6
+        (6, "input", "Mẫu 15/15a/16 + HO_SO_GIAI_TRINH", "(từ Phase 5)", 0, 0, None),
+        (6, "output", "Validation — 9 test", "Validation sheet (HO_SO_v12.0)", 9, 0, "9/9 PASS"),
+        (6, "output", "Báo cáo so sánh phiên bản", "COMPARE_v11.3_vs_v12.0.xlsx", 0, 3_900_000, None),
+    ]
+    for phase, role, label, filename, rows, size, note in items:
+        db.add(
+            PhaseArtifact(
+                company_id=company.id,
+                phase_no=phase,
+                role=role,
+                label=label,
+                filename=filename,
+                rows=rows or None,
+                size_bytes=size or None,
+                note=note,
+            )
+        )
+
+
+def seed_pipeline_runs(db, company: Company) -> None:
+    """Lịch sử chạy pipeline — 8 lần thật từ session note Johnson."""
+    runs = [
+        (1, "v0.9", "P1-P3", datetime(2026, 3, 1, 9, 14), 1820, "Phạm Vương", "done", 12, "Lần đầu chuẩn hoá data thô"),
+        (2, "v1.0", "P1-P3", datetime(2026, 3, 5, 0, 30), 1843, "Phạm Vương", "done", 14, "Tag v1-final, archived"),
+        (3, "v2.0", "P2", datetime(2026, 3, 5, 1, 54), 612, "Trần Tú Anh", "done", 4, "Material Master 20.064 mã"),
+        (4, "v2.1", "P3-P4", datetime(2026, 3, 6, 2, 17), 1380, "Phạm Vương", "done", 8, "Audit + investigation 4.1"),
+        (5, "v3.0", "P4", datetime(2026, 3, 9, 15, 47), 720, "Phạm Vương", "done", 2, "Inv 4.3 MvT 122"),
+        (6, "v3.1", "P4", datetime(2026, 3, 9, 16, 5), 542, "Phạm Vương", "done", 2, "Inv 4.4 static vs behavior"),
+        (7, "v10.0", "P5", datetime(2026, 3, 22, 8, 20), 480, "Trần Tú Anh", "done", 5, "Mẫu 15/15a/16 first cut"),
+        (8, "v11.0", "P5", datetime(2026, 3, 23, 1, 57), 510, "Phạm Vương", "done", 5, "Refactor settlement/ package"),
+        (9, "v11.2", "P5", datetime(2026, 3, 30, 8, 54), 488, "Phạm Vương", "done", 5, "M15=4.853, M15a=517, M16=42.678. 8/8 PASS"),
+        (10, "v11.3", "P5-P6", datetime(2026, 3, 30, 13, 36), 521, "Trần Tú Anh", "done", 6, "Fix BTP closing stock norm. Traceability 99,4 → 99,9%"),
+        (11, "v12.0", "P5-P6", datetime(2026, 3, 30, 21, 35), 492, "Phạm Vương", "done", 7, "Final: 9/9 PASS, M15=4.773, all overrides applied"),
+    ]
+    for run_no, version, phases, started, duration, actor, status, n_art, note in runs:
+        db.add(
+            PipelineRun(
+                company_id=company.id,
+                run_no=run_no,
+                version=version,
+                phases_label=phases,
+                started_at=started,
+                duration_s=duration,
+                actor=actor,
+                status=status,
+                artifacts_count=n_art,
+                note=note,
+            )
+        )
+
+
 def seed_nvl_traceability(db, company: Company) -> None:
     """Pull NVL_Traceability sheet từ HO_SO_GIAI_TRINH v12.0."""
     f = OUT / f"HO_SO_GIAI_TRINH_{VER}.xlsx"
@@ -754,6 +845,8 @@ def main() -> None:
         seed_mau15a(db, company)
         seed_mau16(db, company)
         seed_bom_cycles(db, company)
+        seed_phase_artifacts(db, company)
+        seed_pipeline_runs(db, company)
         seed_nvl_traceability(db, company)
         seed_risks(db, company)
         seed_process_logs(db, company)
@@ -764,7 +857,8 @@ def main() -> None:
         print(f"[seed] OK — main company id={n.id} slug={n.slug}")
         for tbl in (Material, Mb51Movement, BcctRecord, AuditFinding, Investigation,
                     Mau15Row, Mau15aRow, Mau16Row, BomCycle, BomCycleEdge,
-                    NvlTraceability, RiskFinding, ProcessLog, ValidationResult):
+                    PhaseArtifact, PipelineRun, NvlTraceability, RiskFinding,
+                    ProcessLog, ValidationResult):
             cnt = db.scalar(select(__import__("sqlalchemy").func.count()).select_from(tbl))
             print(f"  {tbl.__tablename__:24s} {cnt:>8d}")
 

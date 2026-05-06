@@ -50,6 +50,12 @@
             <a href="{{ base }}/trace" {% if "/trace" in p %}class="active"{% endif %}>Truy vết NVL</a>
             <a href="{{ base }}/log" {% if "/log" in p %}class="active"{% endif %}>Nhật ký xử lý</a>
         </div>
+
+        <div class="rail-section">
+            <div class="rail-section-label">Hệ thống</div>
+            <a href="{{ base }}/runs" {% if "/runs" in p %}class="active"{% endif %}>Lịch sử chạy</a>
+            <a href="{{ base }}/rules" {% if "/rules" in p %}class="active"{% endif %}>Quy tắc xử lý</a>
+        </div>
         {% endif %}
 
         <div class="rail-section">
