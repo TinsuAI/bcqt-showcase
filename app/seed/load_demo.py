@@ -654,18 +654,20 @@ def seed_phase_artifacts(db, company: Company) -> None:
 
 def seed_pipeline_runs(db, company: Company) -> None:
     """Lịch sử chạy pipeline — 8 lần thật từ session note Johnson."""
+    # Durations realistic: full P1-P6 trên 243K rows MB51 + 20K mã + 42K M16 mất 25-45 phút.
+    # P5-only (BOM flatten + cycle solver) 15-25 phút. Excel I/O nặng.
     runs = [
-        (1, "v0.9", "P1-P3", datetime(2026, 3, 1, 9, 14), 1820, "Lê Minh Tuấn", "done", 12, "Lần đầu chuẩn hoá data thô"),
-        (2, "v1.0", "P1-P3", datetime(2026, 3, 5, 0, 30), 1843, "Lê Minh Tuấn", "done", 14, "Tag v1-final, archived"),
-        (3, "v2.0", "P2", datetime(2026, 3, 5, 1, 54), 612, "Nguyễn Thu Hà", "done", 4, "Material Master 20.064 mã"),
-        (4, "v2.1", "P3-P4", datetime(2026, 3, 6, 2, 17), 1380, "Lê Minh Tuấn", "done", 8, "Audit + investigation 4.1"),
-        (5, "v3.0", "P4", datetime(2026, 3, 9, 15, 47), 720, "Lê Minh Tuấn", "done", 2, "Inv 4.3 MvT 122"),
-        (6, "v3.1", "P4", datetime(2026, 3, 9, 16, 5), 542, "Lê Minh Tuấn", "done", 2, "Inv 4.4 static vs behavior"),
-        (7, "v10.0", "P5", datetime(2026, 3, 22, 8, 20), 480, "Nguyễn Thu Hà", "done", 5, "Mẫu 15/15a/16 first cut"),
-        (8, "v11.0", "P5", datetime(2026, 3, 23, 1, 57), 510, "Lê Minh Tuấn", "done", 5, "Refactor settlement/ package"),
-        (9, "v11.2", "P5", datetime(2026, 3, 30, 8, 54), 488, "Lê Minh Tuấn", "done", 5, "M15=4.853, M15a=517, M16=42.678. 8/8 PASS"),
-        (10, "v11.3", "P5-P6", datetime(2026, 3, 30, 13, 36), 521, "Nguyễn Thu Hà", "done", 6, "Fix BTP closing stock norm. Traceability 99,4 → 99,9%"),
-        (11, "v12.0", "P5-P6", datetime(2026, 3, 30, 21, 35), 492, "Lê Minh Tuấn", "done", 7, "Final: 9/9 PASS, M15=4.773, all overrides applied"),
+        (1, "v0.9", "P1-P3", datetime(2026, 3, 1, 9, 14), 2418, "Lê Minh Tuấn", "done", 12, "Lần đầu chuẩn hoá data thô"),
+        (2, "v1.0", "P1-P6", datetime(2026, 3, 5, 0, 30), 2702, "Lê Minh Tuấn", "done", 14, "Tag v1-final, archived"),
+        (3, "v2.0", "P2", datetime(2026, 3, 5, 12, 54), 720, "Nguyễn Thu Hà", "done", 4, "Material Master 20.064 mã, 2.100 mâu thuẫn"),
+        (4, "v2.1", "P3-P4", datetime(2026, 3, 6, 2, 17), 1635, "Lê Minh Tuấn", "done", 8, "Audit + investigation 4.1"),
+        (5, "v3.0", "P4", datetime(2026, 3, 9, 15, 47), 980, "Lê Minh Tuấn", "done", 2, "Inv 4.3 MvT 122 / B13"),
+        (6, "v3.1", "P4", datetime(2026, 3, 9, 16, 35), 832, "Lê Minh Tuấn", "done", 2, "Inv 4.4 static vs behavior"),
+        (7, "v10.0", "P5", datetime(2026, 3, 22, 8, 20), 1248, "Nguyễn Thu Hà", "done", 5, "Mẫu 15/15a/16 first cut"),
+        (8, "v11.0", "P5", datetime(2026, 3, 23, 1, 57), 1456, "Lê Minh Tuấn", "done", 5, "Refactor settlement, dual-source FIFO"),
+        (9, "v11.2", "P5", datetime(2026, 3, 30, 8, 54), 1380, "Lê Minh Tuấn", "done", 5, "M15=4.853, M15a=517, M16=42.678. 8/8 đạt"),
+        (10, "v11.3", "P5-P6", datetime(2026, 3, 30, 13, 36), 1924, "Nguyễn Thu Hà", "done", 6, "Fix BTP closing stock. Truy vết 99,4 → 99,9%"),
+        (11, "v12.0", "P5-P6", datetime(2026, 3, 30, 21, 35), 2156, "Lê Minh Tuấn", "done", 7, "Final: 9/9 đạt, M15=4.773, áp đủ override"),
     ]
     for run_no, version, phases, started, duration, actor, status, n_art, note in runs:
         db.add(
