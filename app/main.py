@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import settings
 from app.db import Base, engine
 from app.routes import companies, insights, landing, phases
-from app.utils import fmt_money, fmt_num, fmt_pct, parse_metrics
+from app.utils import fmt_money, fmt_num, fmt_pct, parse_metrics, vi_direction, vi_severity, vi_status
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -31,6 +31,9 @@ templates.env.filters["num"] = fmt_num
 templates.env.filters["pct"] = fmt_pct
 templates.env.filters["money"] = fmt_money
 templates.env.filters["metrics"] = parse_metrics
+templates.env.filters["vi_status"] = vi_status
+templates.env.filters["vi_severity"] = vi_severity
+templates.env.filters["vi_direction"] = vi_direction
 
 
 def render(request: Request, tpl: str, **ctx) -> HTMLResponse:

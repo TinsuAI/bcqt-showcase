@@ -11,7 +11,7 @@
         <div>
             <h1>Lịch sử chạy pipeline</h1>
             <div class="meta">
-                Mỗi version output kèm phiên bản, người chạy, thời lượng. Đảm bảo có thể trace ngược output về run cụ thể.
+                Mỗi lần chạy đều ghi nhận phiên bản, người chạy, thời lượng. Đảm bảo có thể truy ngược kết quả về một lần chạy cụ thể.
             </div>
         </div>
         <div class="page-actions">
@@ -39,7 +39,7 @@
                     <td class="mono small">{{ r.started_at.strftime("%d/%m/%Y %H:%M") }}</td>
                     <td class="num mono">{{ "%dm %02ds" | format(r.duration_s // 60, r.duration_s % 60) }}</td>
                     <td class="small">{{ r.actor }}</td>
-                    <td><span class="status {{ 'done' if r.status == 'done' else 'failed' }}">{{ r.status }}</span></td>
+                    <td><span class="status {{ 'done' if r.status == 'done' else 'failed' }}">{{ r.status | vi_status }}</span></td>
                     <td class="num">{{ r.artifacts_count }}</td>
                     <td class="small muted">{{ r.note or "" }}</td>
                 </tr>

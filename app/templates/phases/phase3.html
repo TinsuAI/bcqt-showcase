@@ -11,14 +11,14 @@
 
 <section class="section">
     <div class="section-head">
-        <h2>13 test nội bộ + 5 cross-check</h2>
-        <div class="meta">T01-T13: kiểm tra trong từng nguồn. X01-X05: đối chiếu giữa các nguồn (MB51 vs MB5B, MB51 vs BCCT).</div>
+        <h2>13 kiểm tra nội bộ + 5 đối chiếu chéo</h2>
+        <div class="meta">T01-T13: kiểm tra trong từng nguồn. XC1-XC5: đối chiếu giữa các nguồn (MB51 vs MB5B, MB51 vs BCCT).</div>
     </div>
     <div class="panel">
         <div class="table-wrap">
             <table class="data">
                 <thead>
-                    <tr><th>Mã</th><th>Tên test</th><th class="num">Tổng</th><th class="num">Critical</th><th class="num">Warn</th><th class="num">Info</th><th></th></tr>
+                    <tr><th>Mã</th><th>Tên kiểm tra</th><th class="num">Tổng</th><th class="num">Nghiêm trọng</th><th class="num">Cảnh báo</th><th class="num">Thông tin</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for s in summary %}
@@ -47,18 +47,18 @@
     <div class="panel"><div class="table-wrap">
         <table class="data">
             <thead>
-                <tr><th>Mã</th><th>Mức độ</th><th>Tên test</th><th>Detail</th></tr>
+                <tr><th>Mã</th><th>Mức độ</th><th>Tên kiểm tra</th><th>Chi tiết</th></tr>
             </thead>
             <tbody>
                 {% for f in findings %}
                 <tr>
                     <td class="mono">{{ f.material or "—" }}</td>
-                    <td><span class="badge {{ f.severity }}">{{ f.severity }}</span></td>
+                    <td><span class="badge {{ f.severity }}">{{ f.severity | vi_severity }}</span></td>
                     <td class="small">{{ f.test_name }}</td>
                     <td class="small mono" style="max-width: 600px; word-break: break-word;">{{ f.detail[:200] if f.detail else "" }}</td>
                 </tr>
                 {% endfor %}
-                {% if not findings %}<tr><td colspan="4" class="no-data">Không có finding.</td></tr>{% endif %}
+                {% if not findings %}<tr><td colspan="4" class="no-data">Không có phát hiện nào.</td></tr>{% endif %}
             </tbody>
         </table>
     </div></div>

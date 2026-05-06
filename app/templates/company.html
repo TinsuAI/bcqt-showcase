@@ -58,7 +58,7 @@
                         <h3>{{ run.name }}</h3>
                     </div>
                     <div class="row" style="gap: 8px;">
-                        <span class="status done">Done</span>
+                        <span class="status done">{{ run.status | vi_status }}</span>
                         <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/{{ run.phase_no }}">Mở →</a>
                     </div>
                 </div>
@@ -103,8 +103,8 @@
                 <a class="row-line" href="/c/{{ company.slug }}/phase/5"><span class="badge primary">M15</span><span class="val small" style="flex:1;">Mẫu 15 — NVL</span><span class="tiny muted">→</span></a>
                 <a class="row-line" href="/c/{{ company.slug }}/phase/5?form=m15a"><span class="badge primary">M15a</span><span class="val small" style="flex:1;">Mẫu 15a — TP XK</span><span class="tiny muted">→</span></a>
                 <a class="row-line" href="/c/{{ company.slug }}/phase/5?form=m16"><span class="badge primary">M16</span><span class="val small" style="flex:1;">Mẫu 16 — Định mức</span><span class="tiny muted">→</span></a>
-                <a class="row-line" href="/c/{{ company.slug }}/phase/5/cycles"><span class="badge warning">Cyc</span><span class="val small" style="flex:1;">Vòng tròn sản xuất</span><span class="tiny muted">→</span></a>
-                <a class="row-line" href="/c/{{ company.slug }}/phase/6"><span class="badge success">Val</span><span class="val small" style="flex:1;">Validate cuối</span><span class="tiny muted">→</span></a>
+                <a class="row-line" href="/c/{{ company.slug }}/phase/5/cycles"><span class="badge warning">VT</span><span class="val small" style="flex:1;">Vòng tròn sản xuất</span><span class="tiny muted">→</span></a>
+                <a class="row-line" href="/c/{{ company.slug }}/phase/6"><span class="badge success">KT</span><span class="val small" style="flex:1;">Kiểm thử cuối</span><span class="tiny muted">→</span></a>
             </div>
         </div>
     </aside>

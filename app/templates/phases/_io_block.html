@@ -8,7 +8,7 @@
         <div class="panel">
             <div class="panel-head">
                 <div class="row" style="gap: 8px;">
-                    <span class="badge info mono tiny">INPUT</span>
+                    <span class="badge info mono tiny">ĐẦU VÀO</span>
                     <h3>Đầu vào</h3>
                 </div>
                 <span class="meta">{{ inputs | length }} mục</span>
@@ -35,7 +35,7 @@
         <div class="panel run-panel">
             <div class="panel-head">
                 <div class="row" style="gap: 8px;">
-                    <span class="badge primary mono tiny">RUN</span>
+                    <span class="badge primary mono tiny">LẦN CHẠY</span>
                     <h3>Lần chạy gần nhất</h3>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                     </div>
                     <div class="run-stat">
                         <div class="rs-k">Trạng thái</div>
-                        <div class="rs-v"><span class="status done">{{ last_run.status }}</span></div>
+                        <div class="rs-v"><span class="status done">{{ last_run.status | vi_status }}</span></div>
                     </div>
                     <div class="run-stat" style="grid-column: 1 / -1;">
                         <div class="rs-k">Người chạy</div>
@@ -76,7 +76,7 @@
         <div class="panel">
             <div class="panel-head">
                 <div class="row" style="gap: 8px;">
-                    <span class="badge success mono tiny">OUTPUT</span>
+                    <span class="badge success mono tiny">ĐẦU RA</span>
                     <h3>Đầu ra</h3>
                 </div>
                 <span class="meta">{{ outputs | length }} mục</span>

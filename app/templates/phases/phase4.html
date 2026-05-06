@@ -24,7 +24,7 @@
                 </div>
                 <div class="row" style="gap: 8px;">
                     <span class="badge neutral">{{ inv.materials_count | num }} mã</span>
-                    <span class="status {{ 'done' if inv.status == 'done' else 'pending' }}">{{ inv.status }}</span>
+                    <span class="status {{ 'done' if inv.status == 'done' else 'pending' }}">{{ inv.status | vi_status }}</span>
                 </div>
             </div>
             <div class="panel-body">

@@ -9,7 +9,7 @@
             <div class="meta">{{ company.name }} · {{ run.summary if run else "" }}</div>
         </div>
         <div class="page-actions">
-            {% if run %}<span class="status done">{{ run.status }}</span>{% endif %}
+            {% if run %}<span class="status done">{{ run.status | vi_status }}</span>{% endif %}
             <a class="btn btn-sm" href="/c/{{ company.slug }}">← Tổng quan</a>
         </div>
     </div>

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Đồ thị BOM — {{ company.name }}{% endblock %}
+{% block title %}Đồ thị định mức — {{ company.name }}{% endblock %}
 {% block crumb %}
 <span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
-<span class="sep">/</span><span class="here">Đồ thị BOM</span>
+<span class="sep">/</span><span class="here">Đồ thị định mức</span>
 {% endblock %}
 
 {% block content %}
@@ -11,7 +11,7 @@
         <div>
             <h1>Đồ thị dây chuyền sản xuất</h1>
             <div class="meta">
-                Mỗi mã thành phẩm xuất khẩu đều có 1 cây BOM truy ngược về NVL gốc — pipeline tự dựng từ MB51 thật, không phụ thuộc BOM khai báo nội bộ.
+                Mỗi mã thành phẩm xuất khẩu đều có 1 cây định mức truy ngược về NVL gốc — pipeline tự dựng từ MB51 thật, không phụ thuộc định mức khai báo nội bộ.
             </div>
         </div>
     </div>
@@ -20,7 +20,7 @@
 <section class="section">
     <div class="kpi">
         <div class="kpi-cell primary">
-            <div class="k">TP có BOM</div>
+            <div class="k">TP có định mức</div>
             <div class="v">{{ n_tp_total | num }}</div>
             <div class="d">tất cả TP xuất khẩu (Mẫu 15a)</div>
         </div>
@@ -30,9 +30,9 @@
             <div class="d">{{ "%.1f" | format(n_nodes_total / n_tp_total) if n_tp_total else 0 }} mã/TP trung bình</div>
         </div>
         <div class="kpi-cell">
-            <div class="k">Tổng cạnh BOM</div>
+            <div class="k">Tổng quan hệ định mức</div>
             <div class="v">{{ n_edges_total | num }}</div>
-            <div class="d">quan hệ output ← input</div>
+            <div class="d">quan hệ thành phẩm ← nguyên liệu</div>
         </div>
     </div>
 </section>
@@ -40,7 +40,7 @@
 <section class="section">
     <div class="section-head">
         <h2>Tra cứu theo mã TP</h2>
-        <div class="meta">Nhập mã chính xác — pipeline đã pre-compute đồ thị cho toàn bộ {{ n_tp_total }} TP.</div>
+        <div class="meta">Nhập mã chính xác — pipeline đã dựng sẵn đồ thị cho toàn bộ {{ n_tp_total }} TP.</div>
     </div>
     <div class="panel">
         <div class="panel-body">
@@ -60,7 +60,7 @@
 <section class="section">
     <div class="section-head">
         <h2>TP đại diện</h2>
-        <div class="meta">6 mã có chain vừa đủ để minh hoạ — click để xem đồ thị.</div>
+        <div class="meta">6 mã có chuỗi BOM vừa đủ để minh hoạ — bấm vào để xem đồ thị.</div>
     </div>
     <div class="grid-3">
         {% for g in gallery %}
@@ -87,7 +87,7 @@
     <div class="section-head">
         <h2>Cây BOM của <span class="mono">{{ selected_tp }}</span></h2>
         <div class="meta">
-            {{ nodes | length }} mã · {{ edges | length }} cạnh · click vào node để xem chi tiết.
+            {{ nodes | length }} mã · {{ edges | length }} quan hệ · bấm vào nút để xem chi tiết.
         </div>
     </div>
 

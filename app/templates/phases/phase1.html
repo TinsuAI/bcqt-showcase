@@ -60,7 +60,7 @@
                     <td class="mono">{{ r.declaration_date or "" }}</td>
                     <td class="mono">{{ r.declaration_no or "" }}</td>
                     <td><span class="badge {% if r.direction == 'import' %}info{% elif r.direction == 'export' %}success{% else %}neutral{% endif %}">{{ r.customs_type or "—" }}</span></td>
-                    <td class="small">{{ r.direction or "" }}</td>
+                    <td class="small">{{ r.direction | vi_direction }}</td>
                     <td class="mono">{{ r.material or "" }}</td>
                     <td class="num">{{ r.quantity | num }}</td>
                     <td>{{ r.uom or "" }}</td>
