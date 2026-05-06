@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Nhật ký xử lý — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Nhật ký xử lý</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Nhật ký xử lý</h1>
+            <div class="meta">
+                Mọi quyết định nghiệp vụ đều được ghi lại — ai chốt, lúc nào, lý do gì. Bằng chứng có quy trình khi hải quan thanh tra.
+            </div>
+        </div>
+        <div class="page-actions">
+            <span class="badge neutral">{{ logs | length }} bản ghi</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="row" style="gap: 4px; margin-bottom: 12px; flex-wrap: wrap;">
+        <a class="btn btn-sm {% if not selected_phase %}btn-primary{% endif %}" href="/c/{{ company.slug }}/log">Tất cả</a>
+        {% for p in [1,2,3,4,5,6] %}
+        <a class="btn btn-sm {% if selected_phase == p %}btn-primary{% endif %}" href="/c/{{ company.slug }}/log?phase={{ p }}">P{{ p }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="panel">
+        <div class="panel-body dense">
+            {% for log in logs %}
+            <div class="row-line" style="align-items: flex-start; padding: 14px;">
+                <div style="flex: 0 0 110px;">
+                    <div class="mono small" style="font-weight: 600;">{{ log.occurred_on.strftime("%d/%m/%Y") }}</div>
+                    {% if log.phase_no %}<span class="badge primary mono" style="margin-top: 4px;">P{{ log.phase_no }}</span>{% endif %}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="row" style="gap: 8px; margin-bottom: 4px;">
+                        <strong style="font-size: 13px;">{{ log.action }}</strong>
+                    </div>
+                    <div class="tiny muted" style="margin-bottom: 6px;">
+                        <span style="font-weight: 600; color: var(--foreground-soft);">{{ log.actor }}</span>
+                        {% if log.actor_role %}· {{ log.actor_role }}{% endif %}
+                    </div>
+                    {% if log.detail %}
+                    <p class="small muted" style="margin-top: 4px;">{{ log.detail }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% if not logs %}
+            <div class="no-data">Chưa có bản ghi nào.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

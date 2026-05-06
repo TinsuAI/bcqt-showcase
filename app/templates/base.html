@@ -6,46 +6,85 @@
     <title>{% block title %}BCQT Showcase{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
     <script src="{{ url_for('static', path='js/app.js') }}" defer></script>
 </head>
 <body data-theme="dark">
-    <header class="topbar">
-        <div class="topbar-inner">
-            <a href="/" class="brand">
-                <span class="brand-mark">QT</span>
-                <span>BCQT Showcase</span>
-                <span class="brand-tag">demo</span>
-            </a>
-            <nav class="nav">
-                <a href="/" {% if request.url.path == "/" %}class="active"{% endif %}>Tổng quan</a>
-                {% if request.url.path.startswith("/c/") %}
-                {% set p = request.url.path %}
-                {% set base = "/c/" + p.split("/")[2] %}
-                <a href="{{ base }}" {% if request.url.path == base %}class="active"{% endif %}>Công ty</a>
-                <a href="{{ base }}/phase/1" {% if "/phase/1" in p %}class="active"{% endif %}>P1 Clean</a>
-                <a href="{{ base }}/phase/2" {% if "/phase/2" in p %}class="active"{% endif %}>P2 Enrich</a>
-                <a href="{{ base }}/phase/3" {% if "/phase/3" in p %}class="active"{% endif %}>P3 Audit</a>
-                <a href="{{ base }}/phase/4" {% if "/phase/4" in p %}class="active"{% endif %}>P4 Investigate</a>
-                <a href="{{ base }}/phase/5" {% if "/phase/5" in p %}class="active"{% endif %}>P5 Settlement</a>
-                <a href="{{ base }}/phase/6" {% if "/phase/6" in p %}class="active"{% endif %}>P6 Validate</a>
-                {% endif %}
-            </nav>
+{% set p = request.url.path %}
+{% set in_company = p.startswith("/c/") %}
+{% set slug = p.split("/")[2] if in_company else None %}
+{% set base = "/c/" + slug if slug else "" %}
+<div class="app">
+    <aside class="rail">
+        <a href="/" class="rail-brand">
+            <span class="mark">QT</span>
+            <span class="name">BCQT Showcase</span>
+            <span class="env">demo</span>
+        </a>
+
+        <div class="rail-section">
+            <div class="rail-section-label">Tổng</div>
+            <a href="/" {% if p == "/" %}class="active"{% endif %}>Bảng điều khiển</a>
+            <a href="/#companies">Doanh nghiệp</a>
+        </div>
+
+        {% if in_company %}
+        <div class="rail-section">
+            <div class="rail-section-label">{{ slug | upper }} — Pipeline</div>
+            <a href="{{ base }}" {% if p == base %}class="active"{% endif %}>Tổng quan công ty</a>
+            <a href="{{ base }}/phase/1" {% if "/phase/1" in p %}class="active"{% endif %}>P1 · Chuẩn hoá</a>
+            <a href="{{ base }}/phase/2" {% if "/phase/2" in p %}class="active"{% endif %}>P2 · Bổ sung</a>
+            <a href="{{ base }}/phase/3" {% if "/phase/3" in p %}class="active"{% endif %}>P3 · Audit</a>
+            <a href="{{ base }}/phase/4" {% if "/phase/4" in p %}class="active"{% endif %}>P4 · Điều tra</a>
+            <a href="{{ base }}/phase/5" {% if "/phase/5" in p and "cycles" not in p %}class="active"{% endif %}>P5 · Mẫu QT</a>
+            <a href="{{ base }}/phase/5/cycles" {% if "cycles" in p %}class="active"{% endif %}>P5 · Cycles</a>
+            <a href="{{ base }}/phase/6" {% if "/phase/6" in p %}class="active"{% endif %}>P6 · Validate</a>
+        </div>
+
+        <div class="rail-section">
+            <div class="rail-section-label">Nghiệp vụ</div>
+            <a href="{{ base }}/risks" {% if "/risks" in p %}class="active"{% endif %}>Phát hiện rủi ro</a>
+            <a href="{{ base }}/trace" {% if "/trace" in p %}class="active"{% endif %}>Truy vết NVL</a>
+            <a href="{{ base }}/log" {% if "/log" in p %}class="active"{% endif %}>Nhật ký xử lý</a>
+        </div>
+        {% endif %}
+
+        <div class="rail-section">
+            <div class="rail-section-label">Tham chiếu</div>
+            <a href="https://thuvienphapluat.vn" target="_blank" rel="noopener">TT 38, 39, 121</a>
+            <a href="https://thuvienphapluat.vn" target="_blank" rel="noopener">QĐ 1357/QĐ-TCHQ</a>
+            <a href="https://thuvienphapluat.vn" target="_blank" rel="noopener">CV 3304/TCHQ-GSQL</a>
+        </div>
+
+        <div class="rail-foot">
+            v0.1.0 · SQLite local<br>
+            © Trọng Tín 2026
+        </div>
+    </aside>
+
+    <div class="workarea">
+        <div class="topbar">
+            <div class="crumb">
+                <a href="/">BCQT</a>
+                {% block crumb %}<span class="here">Bảng điều khiển</span>{% endblock %}
+            </div>
             <div class="topbar-actions">
-                <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Đổi giao diện">☾</button>
+                <button id="theme-toggle" class="icon-btn" type="button" aria-label="Đổi giao diện">☾</button>
+                <div class="user-pill">
+                    <span class="av">TT</span>
+                    <span>trongtin@demo</span>
+                </div>
             </div>
         </div>
-    </header>
-    <main class="shell">
-        {% block content %}{% endblock %}
-        <footer class="foot">
-            <div>© Trọng Tín — BCQT Showcase. Số liệu thật đã ẩn danh.</div>
-            <div>Stack: FastAPI + Jinja2 + HTMX + ECharts. SQLite.</div>
-        </footer>
-    </main>
-    {% block scripts %}{% endblock %}
+
+        <main class="page">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,11 +1,16 @@
-{# Header tái sử dụng cho mỗi phase page. Dùng: include "phases/_phase_head.html" #}
-<section class="fade-in stack">
-    <div class="row" style="gap: 10px;">
-        <a href="/c/{{ company.slug }}" class="badge neutral">← {{ company.name }}</a>
-        <span class="badge {% if run and run.status == 'done' %}success{% else %}neutral{% endif %}">P{{ run.phase_no if run else "?" }}</span>
+{# Header dense cho mỗi phase page #}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>
+                <span class="badge primary mono" style="vertical-align: 1px;">P{{ run.phase_no if run else "?" }}</span>
+                {{ run.name if run else "Phase" }}
+            </h1>
+            <div class="meta">{{ company.name }} · {{ run.summary if run else "" }}</div>
+        </div>
+        <div class="page-actions">
+            {% if run %}<span class="status done">{{ run.status }}</span>{% endif %}
+            <a class="btn btn-sm" href="/c/{{ company.slug }}">← Tổng quan</a>
+        </div>
     </div>
-    <div>
-        <h1 style="font-size: 30px; letter-spacing: -0.02em;">{{ run.name if run else "Phase" }}</h1>
-        <p class="muted small" style="margin-top: 6px;">{{ run.summary if run else "" }}</p>
-    </div>
-</section>
+</div>

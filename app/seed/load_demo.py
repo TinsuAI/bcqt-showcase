@@ -31,8 +31,11 @@ from app.models import (
     Mau15aRow,
     Mau16Row,
     Mb51Movement,
+    NvlTraceability,
     PhaseRun,
+    ProcessLog,
     RawFile,
+    RiskFinding,
     ValidationResult,
 )
 
@@ -132,8 +135,8 @@ def seed_phase_meta(db, company: Company) -> None:
         },
         6: {
             "name": "Xác thực kết quả",
-            "summary": "9 test validate: tổng nhập M15 khớp HQ, tổng XK M15a khớp E42, tổng tiêu hao M16 khớp MvT 261. 9/9 PASS, traceability 99.4%.",
-            "metrics": {"tests_total": 9, "tests_pass": 9, "traceability_pct": 99.4},
+            "summary": "9 test validate: tổng nhập M15 khớp HQ, tổng XK M15a khớp E42, tổng tiêu hao M16 khớp MvT 261. 9/9 PASS, traceability 99.9%.",
+            "metrics": {"tests_total": 9, "tests_pass": 9, "traceability_pct": 99.9},
         },
     }
     for n, d in metrics.items():
@@ -381,7 +384,7 @@ def seed_mau15a(db, company: Company) -> None:
     db.add_all(rows)
 
 
-def seed_mau16(db, company: Company, limit: int = 5000) -> None:
+def seed_mau16(db, company: Company, limit: int = 50000) -> None:
     f = OUT / f"Mau_16_DMTT_{VER}.csv"
     if not f.exists():
         return
@@ -460,11 +463,258 @@ def seed_bom_cycles(db, company: Company) -> None:
             )
 
 
+def seed_nvl_traceability(db, company: Company) -> None:
+    """Pull NVL_Traceability sheet từ HO_SO_GIAI_TRINH v12.0."""
+    f = OUT / f"HO_SO_GIAI_TRINH_{VER}.xlsx"
+    if not f.exists():
+        return
+    try:
+        df = pd.read_excel(f, sheet_name="NVL_Traceability", skiprows=2)
+    except Exception:
+        return
+    rows = []
+    for _, r in df.iterrows():
+        mat = _safe_str(r.get("material"))
+        if not mat or mat == "TỔNG":
+            continue
+        rows.append(
+            NvlTraceability(
+                company_id=company.id,
+                material=mat[:64],
+                description=_safe_str(r.get("material_description")),
+                uom=None,
+                xuat_sx=float(r.get("xuat_sx") or 0),
+                cho_xuat_khau=float(r.get("cho_xuat_khau") or 0),
+                trong_tp_ton=float(r.get("trong_tp_ton") or 0),
+                trong_btp_ton=float(r.get("trong_btp_ton") or 0),
+                giai_trinh=float(r.get("giai_trinh") or 0),
+                con_lai=float(r.get("con_lai") or 0),
+                pct_giai_trinh=float(r.get("pct_giai_trinh") or 0),
+            )
+        )
+    db.add_all(rows)
+
+
+def seed_risks(db, company: Company) -> None:
+    """Top rủi ro nghiệp vụ — pain point bán hàng. Số liệu từ pipeline thật của Johnson."""
+    risks = [
+        {
+            "code": "R01",
+            "title": "404 mã NVL có dấu hiệu under-count định mức",
+            "severity": "high",
+            "category": "Định mức (Mẫu 16)",
+            "materials_count": 404,
+            "money_impact_vnd": None,
+            "description": (
+                "404 mã NVL có dấu hiệu thiếu trong định mức công bố — tổng tiêu hao thực tế "
+                "ghi nhận trên SAP cao hơn tổng định mức × số lượng TP xuất khẩu. Khoảng chênh "
+                "có thể là (a) phế liệu, hao hụt chưa khai; (b) định mức công bố chưa đủ; "
+                "(c) sai mapping NVL ↔ TP khi build BOM."
+            ),
+            "if_ignored": (
+                "Hải quan đối chiếu Mẫu 16 với MB51 → phát hiện chênh → yêu cầu giải trình. "
+                "Nếu không giải trình được, có thể bị áp giả định 'sử dụng sai mục đích' theo "
+                "Đ60 TT 38/2015 → truy thu thuế NK + phạt 10-20% giá trị NVL."
+            ),
+            "resolution": (
+                "Mỗi mã trong 404 đã có log truy vết (sheet NVL_Traceability) — đối chiếu thực tế "
+                "trên dây chuyền hoặc bổ sung định mức phế liệu vào Mẫu 16 trước khi nộp."
+            ),
+            "regulation_ref": "TT 38/2015 Đ55 + Đ60",
+        },
+        {
+            "code": "R02",
+            "title": "2.100 mã có mâu thuẫn phân loại nội bộ (master data)",
+            "severity": "high",
+            "category": "Master data",
+            "materials_count": 2100,
+            "money_impact_vnd": None,
+            "description": (
+                "Tài khoản kế toán nói A (vd 12150000 = NVL) nhưng Material Type SAP nói B "
+                "(vd HALB = bán thành phẩm). 1.781 mã GL=12150000 + type=HALB (linh kiện mua "
+                "ngoài đang treo trên TK NVL); 293 mã GL=12130003 + type=ROH (NVL treo trên "
+                "TK BTP ngoại mua). 26 mã pattern khác."
+            ),
+            "if_ignored": (
+                "Mẫu 15 và Mẫu 16 sẽ hiểu khác nhau về cùng một mã → số liệu nhập-xuất-tồn "
+                "không khớp → không defensible khi thanh tra."
+            ),
+            "resolution": (
+                "Đã chuẩn bị danh sách 2.100 mã. Yêu cầu phòng kế toán + phòng kho "
+                "rà soát đồng thuận, thống nhất cách hiểu trước khi sang Phase 5."
+            ),
+            "regulation_ref": "Nguyên tắc kế toán + chuẩn SAP",
+        },
+        {
+            "code": "R03",
+            "title": "20 vòng tròn sản xuất TP A ↔ B ↔ C — không thể flatten BOM thường",
+            "severity": "medium",
+            "category": "BOM / định mức",
+            "materials_count": 44,
+            "money_impact_vnd": None,
+            "description": (
+                "44 mã TP rơi vào 20 cụm liên thông mạnh (Tarjan SCC): nhỏ nhất 2-node, lớn "
+                "nhất 4-node (MGM1114-02 ↔ -08 ↔ -23 ↔ -39). Thực chất là 'chuyển đổi phiên "
+                "bản' (US ↔ EU ↔ ASIA) — phiên bản này tháo nhãn dán nhãn phiên bản kia."
+            ),
+            "if_ignored": (
+                "Topological sort phá sản, tính định mức bị deadlock — hoặc bỏ qua các mã "
+                "này (thiếu data trong Mẫu 16) hoặc tính trùng (overcount)."
+            ),
+            "resolution": (
+                "Pipeline phát hiện và giải bằng hệ tuyến tính (I − C)·X = K trên mỗi SCC. "
+                "Đã verify ρ(C) < 1 cho tất cả 20 SCC, hệ số khuếch đại 1.002–2.0. Có log "
+                "`Conversion_Orders` liệt kê 167 lệnh chuyển đổi."
+            ),
+            "regulation_ref": "TT 38/2015 Đ55 (định mức bình quân thực tế)",
+        },
+        {
+            "code": "R04",
+            "title": "Residual 6.619 đơn vị NVL không truy được vào TP nào",
+            "severity": "medium",
+            "category": "Truy vết",
+            "materials_count": 0,
+            "quantity_impact": 6619,
+            "money_impact_vnd": None,
+            "description": (
+                "Trong 4.757.304 đơn vị NVL xuất sản xuất, đã giải trình được 4.750.685 đơn "
+                "vị (99,9%) vào TP xuất khẩu / TP tồn / BTP tồn. Còn 6.619 đơn vị (~0,14%) "
+                "không truy được. Phân tích cho thấy 79% từ 3 mã thép tấm SPHC — đặc thù "
+                "hao hụt cắt dập."
+            ),
+            "if_ignored": (
+                "Hải quan có thể coi 0,14% là 'thất thoát NVL' → áp truy thu thuế NK. "
+                "Mức 0,14% thường được chấp nhận nếu giải trình được nguồn gốc (hao hụt cắt)."
+            ),
+            "resolution": (
+                "Bổ sung tài liệu kỹ thuật về tỉ lệ hao hụt cắt dập thép tấm (industry "
+                "standard 1-3%) làm chứng cứ giải trình."
+            ),
+            "regulation_ref": "TT 38/2015 Đ60 + TT 121/2025 (hao hụt)",
+        },
+        {
+            "code": "R05",
+            "title": "9 câu hỏi quan trọng về quy tắc nghiệp vụ chưa có phản hồi",
+            "severity": "high",
+            "category": "Quy tắc",
+            "materials_count": 0,
+            "money_impact_vnd": None,
+            "description": (
+                "Q1-Q5 BLOCKING_P5 (UOM ×1000, E11/E13 overlap, B13, NVL không nhập, HALB "
+                "trên 12150000). Q6-Q8 BLOCKING_SUBMISSION (multi-type, HS mismatch, "
+                "negative stock). Q9 NON_BLOCKING (MvT 903)."
+            ),
+            "if_ignored": (
+                "Submit Mẫu 15/15a/16 dựa trên giả định một chiều — nếu giả định sai, toàn "
+                "bộ báo cáo phải làm lại từ Phase 5."
+            ),
+            "resolution": (
+                "Đã gửi danh sách câu hỏi cho khách qua doc CAU_HOI_CHO_JOHNSON.pdf. "
+                "Đợi phản hồi rồi áp rule vào pipeline run kế tiếp."
+            ),
+            "regulation_ref": None,
+        },
+        {
+            "code": "R06",
+            "title": "340 mã có hành vi MB51 mâu thuẫn với phân loại tĩnh (TK kế toán)",
+            "severity": "medium",
+            "category": "Phân loại",
+            "materials_count": 340,
+            "money_impact_vnd": None,
+            "description": (
+                "340 mã (5,5% mã active) có TK kế toán nói X nhưng hành vi sản xuất thực tế "
+                "(input/output trong MB51) cho thấy là Y. Top: 106 BTP_NM→BTP_SX, 82 "
+                "BTP_SX→NVL, 81 TP→BTP_SX. 131 mã giải quyết được bằng Material Type, 209 "
+                "mã cả TK + type đều sai → ưu tiên hành vi."
+            ),
+            "if_ignored": (
+                "Lập Mẫu 15/15a sai phân loại → mã đáng lẽ không vào BCQT vẫn được khai → "
+                "lệch số liệu, mất uy tín."
+            ),
+            "resolution": (
+                "Pipeline áp quy tắc 'Hành vi > Loại VT > TK kế toán' cho 340 mã, có log "
+                "kiểm tra. Đã chốt với khách trong session 09/03."
+            ),
+            "regulation_ref": "TT 38/2015 + thực tiễn",
+        },
+        {
+            "code": "R07",
+            "title": "Nguy cơ scope CCDC (TK 12200002) — vào BCQT hay không?",
+            "severity": "medium",
+            "category": "Scope",
+            "materials_count": 64,
+            "money_impact_vnd": None,
+            "description": (
+                "64 mã trên TK 12200002 (CCDC theo kế toán) có hành vi tiêu hao giống NVL. "
+                "CV 3304/TCHQ-GSQL phân biệt rõ: nếu nhập E11/E15 → vật tư tiêu hao (vào "
+                "BCQT); nếu nhập E13 → CCDC thật (KHÔNG vào BCQT)."
+            ),
+            "if_ignored": (
+                "Khai sai scope: hoặc thiếu (nếu thực chất là VT tiêu hao mà không khai) → "
+                "truy thu, hoặc thừa (nếu CCDC mà khai) → bị bác."
+            ),
+            "resolution": (
+                "Pipeline check loại hình từng PO: E11/E15 → đưa vào, E13 → loại. Đã verify "
+                "cho từng mã trong 64 mã CCDC."
+            ),
+            "regulation_ref": "CV 3304/TCHQ-GSQL (27/5/2019)",
+        },
+    ]
+    for r in risks:
+        db.add(RiskFinding(company_id=company.id, **r))
+
+
+def seed_process_logs(db, company: Company) -> None:
+    """Nhật ký xử lý — kể chuyện ai làm gì lúc nào (read-only, không tương tác)."""
+    logs = [
+        (date(2026, 3, 5), "Trần Tú Anh", "PTDL", 1, "Chốt rule clean MB51 + MB5B + BCCT",
+         "Confirm: column rename TQ → EN, dedup theo material+date+order, drop garbage rows. Output: CLEAN_MB51 243.421 dòng, CLEAN_MB5B 20.064 mã."),
+        (date(2026, 3, 5), "Phạm Vương", "PTDL", 2, "Hoàn tất phân loại Material Master 20.064 mã",
+         "Pipeline áp rule TK kế toán làm gốc, Material Type xác minh. Phát hiện 2.100 mâu thuẫn (1.781 HALB+12150000, 293 ROH+12130003). Cờ riêng để hỏi khách."),
+        (date(2026, 3, 5), "Trang", "BA", 3, "Audit 13 test + 5 cross-check hoàn tất",
+         "18.800 finding trên 5.314 mã. Top finding: T02 UOM mismatch (×1000 g/kg), T11 negative stock thời điểm, X02 MB51 vs BCCT lệch tổng nhập."),
+        (date(2026, 3, 6), "Ms. Duyên", "Trưởng nhóm", None, "Đề xuất framework BOM flatten",
+         "Quyết định: BTP tự SX không lên Mẫu 15/15a/16 — flatten về NVL gốc theo TT 39/2018. 117 TP dual-role mỗi cái có Mẫu 16 riêng + flatten vào TP cha."),
+        (date(2026, 3, 9), "Phạm Vương", "PTDL", 4, "Investigation 4.3 — MvT 122 / mã loại hình B13",
+         "Kết luận: MvT 122 = điều chỉnh nhập kho (KHÔNG phải trả hàng NCC). 243/268 mã SAP net (101+102) khớp HQ import. Q3 chuyển BLOCKING_P5 → resolved."),
+        (date(2026, 3, 9), "Phạm Vương", "PTDL", 4, "Investigation 4.4 — phân loại tĩnh vs hành vi",
+         "340 mã (5,5%) mâu thuẫn. 131 giải quyết bằng Material Type, 209 mã cả TK + type sai. Áp quy tắc 'Hành vi > Loại VT > TK kế toán'."),
+        (date(2026, 3, 22), "Ms. Duyên", "Trưởng nhóm", 2, "Xác nhận 1.781 mã HALB trên TK 12150000 → giữ NVL",
+         "Lý do: linh kiện mua ngoài kế toán treo trên TK NVL theo quy ước nội bộ. Hành vi sử dụng giống NVL. Phase 5 áp dụng phân loại NVL cho nhóm này."),
+        (date(2026, 3, 23), "Phạm Vương", "PTDL", 5, "Phase 5 v11.2 — sinh Mẫu 15/15a/16",
+         "Mẫu 15: 4.853 dòng. Mẫu 15a: 517 mã. Mẫu 16: 42.678 dòng (517 TP). 8/8 test PASS. NVL Traceability 99,4%."),
+        (date(2026, 3, 24), "Trần Tú Anh", "PTDL", 5, "Phát hiện 20 vòng tròn sản xuất + giải bằng hệ tuyến tính",
+         "Tarjan SCC tìm 20 SCC (44 mã). Lớn nhất 4-node MGM1114-*. Solver (I − C)·X = K: tất cả ρ(C) < 1, hệ số khuếch đại 1.002 – 2.0. Critic review pass."),
+        (date(2026, 3, 25), "Trần Tú Anh", "PTDL", 5, "Domain expert + critic review — rework norm",
+         "Verify TT 38/2015 + TT 39/2018 + TT 121/2025: self-loop solver là cách đúng để xử lý rework. Không có khoảng trống pháp lý A→A. Approved."),
+        (date(2026, 3, 30), "Phạm Vương", "PTDL", 5, "Phase 5 v11.3 — fix BTP closing stock norm",
+         "Bug: BTP tồn cuối tính sai norm khi flatten. Fix → traceability 99,4% → 99,9% (residual 30.652 → 6.619)."),
+        (date(2026, 3, 30), "Trần Tú Anh", "PTDL", 5, "Phase 5 v12.0 — chốt tất cả overrides",
+         "Áp tất cả T02/UOM rule, dual-source FIFO, source_config. M15=4.773, M15a=517, M16=42.676 (517 TP). 9/9 validation PASS."),
+        (date(2026, 3, 30), "Phạm Vương", "PTDL", 6, "Validate cuối — 9/9 PASS",
+         "M15 nhập = HQ import (diff 0,0%). M15a XK = E42 (diff 0,1%). M16 ⊆ M15. Mass conservation ✓. Cycle ρ(C) < 1 ✓. CCDC scope ✓."),
+        (date(2026, 4, 19), "Trang", "BA", None, "Tổng hợp 9 câu hỏi blocking gửi Johnson",
+         "Q1-Q5 BLOCKING_P5, Q6-Q8 BLOCKING_SUBMISSION, Q9 NON_BLOCKING. Đợi phản hồi từ phòng kế toán Johnson."),
+    ]
+    for occurred, actor, role, phase_no, action, detail in logs:
+        db.add(
+            ProcessLog(
+                company_id=company.id,
+                occurred_on=occurred,
+                actor=actor,
+                actor_role=role,
+                phase_no=phase_no,
+                action=action,
+                detail=detail,
+            )
+        )
+
+
 def seed_validations(db, company: Company) -> None:
     items = [
         ("V1", "Tổng nhập M15 khớp HQ E11/E15", "pass", "758,860,000,000", "758,860,000,000", 0.0),
         ("V2", "Tổng XK M15a khớp HQ E42", "pass", "517 mã", "517 mã", 0.0),
-        ("V3", "Tổng tiêu hao M16 ≤ tiêu hao MB51 261", "pass", "4,716,730 đơn vị", "4,686,078 đơn vị", -0.65),
+        ("V3", "Tổng tiêu hao M16 ≤ tiêu hao MB51 261", "pass", "4,757,304 đơn vị", "4,750,685 đơn vị", -0.14),
         ("V4", "Mass conservation M15 (đầu+nhập = xuất+cuối)", "pass", "0", "0", 0.0),
         ("V5", "Mass conservation M15a", "pass", "0", "0", 0.0),
         ("V6", "Cycle norm hội tụ (ρ(C) < 1)", "pass", "20/20 SCC", "20/20 SCC", 0.0),
@@ -504,13 +754,17 @@ def main() -> None:
         seed_mau15a(db, company)
         seed_mau16(db, company)
         seed_bom_cycles(db, company)
+        seed_nvl_traceability(db, company)
+        seed_risks(db, company)
+        seed_process_logs(db, company)
         seed_validations(db, company)
         db.commit()
 
         n = db.scalar(select(Company).where(Company.id == company.id))
         print(f"[seed] OK — main company id={n.id} slug={n.slug}")
         for tbl in (Material, Mb51Movement, BcctRecord, AuditFinding, Investigation,
-                    Mau15Row, Mau15aRow, Mau16Row, BomCycle, BomCycleEdge, ValidationResult):
+                    Mau15Row, Mau15aRow, Mau16Row, BomCycle, BomCycleEdge,
+                    NvlTraceability, RiskFinding, ProcessLog, ValidationResult):
             cnt = db.scalar(select(__import__("sqlalchemy").func.count()).select_from(tbl))
             print(f"  {tbl.__tablename__:24s} {cnt:>8d}")
 

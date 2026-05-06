@@ -218,6 +218,60 @@ class BomCycleEdge(Base):
     produced: Mapped[float] = mapped_column(Float, default=0.0)
 
 
+class NvlTraceability(Base):
+    """Truy vết NVL — mỗi mã: xuất SX → vào TP / khoá BTP / khoá TP / còn lại."""
+
+    __tablename__ = "nvl_traceability"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    material: Mapped[str] = mapped_column(String(64), index=True)
+    description: Mapped[str | None] = mapped_column(String(512))
+    uom: Mapped[str | None] = mapped_column(String(16))
+    xuat_sx: Mapped[float] = mapped_column(Float, default=0.0)
+    cho_xuat_khau: Mapped[float] = mapped_column(Float, default=0.0)
+    trong_tp_ton: Mapped[float] = mapped_column(Float, default=0.0)
+    trong_btp_ton: Mapped[float] = mapped_column(Float, default=0.0)
+    giai_trinh: Mapped[float] = mapped_column(Float, default=0.0)
+    con_lai: Mapped[float] = mapped_column(Float, default=0.0)
+    pct_giai_trinh: Mapped[float] = mapped_column(Float, default=0.0)
+
+
+class RiskFinding(Base):
+    """Rủi ro nghiệp vụ tìm thấy ở Phase 3-4 — pain point bán hàng."""
+
+    __tablename__ = "risk_findings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    code: Mapped[str] = mapped_column(String(16))  # R01, R02, ...
+    title: Mapped[str] = mapped_column(String(255))
+    severity: Mapped[str] = mapped_column(String(16))  # high/medium/low
+    category: Mapped[str] = mapped_column(String(64))  # truy_thu / phan_loai / dinh_muc / ...
+    materials_count: Mapped[int] = mapped_column(Integer, default=0)
+    quantity_impact: Mapped[float | None] = mapped_column(Float)
+    money_impact_vnd: Mapped[float | None] = mapped_column(Float)
+    description: Mapped[str] = mapped_column(Text)
+    if_ignored: Mapped[str | None] = mapped_column(Text)
+    resolution: Mapped[str | None] = mapped_column(Text)
+    regulation_ref: Mapped[str | None] = mapped_column(String(128))
+
+
+class ProcessLog(Base):
+    """Nhật ký xử lý — read-only, kể chuyện ai làm gì lúc nào."""
+
+    __tablename__ = "process_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True)
+    occurred_on: Mapped[date] = mapped_column(Date, index=True)
+    actor: Mapped[str] = mapped_column(String(128))
+    actor_role: Mapped[str | None] = mapped_column(String(64))
+    phase_no: Mapped[int | None] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(255))
+    detail: Mapped[str | None] = mapped_column(Text)
+
+
 class ValidationResult(Base):
     """Phase 6 — 9 test validate cuối."""
 

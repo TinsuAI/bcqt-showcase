@@ -1,51 +1,58 @@
 {% extends "base.html" %}
 {% block title %}Vòng tròn sản xuất — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><a href="/c/{{ company.slug }}/phase/5">P5</a>
+<span class="sep">/</span><span class="here">Cycles</span>
+{% endblock %}
 
 {% block content %}
-<section class="fade-in stack">
-    <div class="row" style="gap: 10px;">
-        <a href="/c/{{ company.slug }}/phase/5" class="badge neutral">← Phase 5</a>
-        <span class="badge warning">{{ sccs|length }} SCC · {{ sccs|sum(attribute='size') }} mã</span>
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Vòng tròn sản xuất TP A → B → C</h1>
+            <div class="meta">
+                {{ sccs|length }} SCC · {{ sccs|sum(attribute='size') }} mã · giải bằng hệ tuyến tính (I − C)·X = K trên mỗi SCC.
+            </div>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/5">← P5 Mẫu QT</a>
+        </div>
     </div>
-    <div>
-        <h1 style="font-size: 28px; letter-spacing: -0.02em;">Vòng tròn sản xuất TP A → B → C</h1>
-        <p class="muted small" style="margin-top: 6px; max-width: 80ch;">
-            Khi một mã TP vừa là đầu ra của lệnh SX này vừa là đầu vào của lệnh SX khác cùng nhóm,
-            topological sort bị deadlock. Đây là hiện tượng phổ biến với "chuyển đổi phiên bản"
-            (vd phiên bản nội địa → phiên bản US → phiên bản EU). Pipeline giải bằng hệ phương trình
-            tuyến tính (I − C)·X = K trên mỗi SCC.
-        </p>
-    </div>
-</section>
+</div>
 
-<section class="section stack">
+<section class="section">
+    <div class="panel" style="margin-bottom: 14px;">
+        <div class="panel-body">
+            <p class="small muted" style="max-width: 90ch;">
+                Khi một mã TP vừa là đầu ra của lệnh SX này vừa là đầu vào của lệnh SX khác cùng nhóm,
+                topological sort bị deadlock. Hiện tượng phổ biến với "chuyển đổi phiên bản"
+                (vd phiên bản nội địa ↔ phiên bản US ↔ phiên bản EU). Pipeline phát hiện bằng Tarjan's SCC
+                và giải bằng hệ phương trình tuyến tính trên ma trận norm cross.
+            </p>
+        </div>
+    </div>
+
+    <div class="stack">
     {% for s in sccs %}
-    <div class="card scc-card">
-        <div class="row-between">
-            <h4>
+    <div class="panel">
+        <div class="panel-head">
+            <div class="row" style="gap: 10px;">
                 <span class="badge {% if s.size >= 4 %}critical{% elif s.size == 3 %}warning{% else %}info{% endif %}">{{ s.size }} mã</span>
-                <span class="mono">{{ s.label }}</span>
-            </h4>
-            <div class="row" style="gap: 8px;">
-                <span class="badge neutral">{{ s.edges|length }} cạnh</span>
+                <h3 class="mono">{{ s.label }}</h3>
             </div>
+            <span class="meta">{{ s.edges|length }} cạnh</span>
         </div>
-        <div class="scc-nodes">
-            {% for n in s.nodes %}<span class="scc-node">{{ n }}</span>{% endfor %}
-        </div>
-        {% if s.edges %}
-        <div class="scc-edges">
-            <div class="small muted" style="margin-bottom: 6px;">Cạnh (nguồn → đích, định mức):</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                {% for e in s.edges %}
-                <code class="tiny">{{ e.src }} → {{ e.dst }}: {{ e.norm | num(4) }}</code>
-                {% endfor %}
+        <div class="panel-body">
+            <div class="scc-nodes">
+                {% for n in s.nodes %}<span class="scc-node">{{ n }}</span>{% endfor %}
             </div>
+            <div id="graph-{{ loop.index }}" class="cycle-graph" style="margin-top: 12px;"
+                 data-scc='{{ {"nodes": s.nodes, "edges": s.edges} | tojson }}'></div>
         </div>
-        {% endif %}
-        <div id="graph-{{ loop.index }}" class="cycle-graph" style="margin-top: 14px;" data-scc='{{ {"nodes": s.nodes, "edges": s.edges} | tojson }}'></div>
     </div>
     {% endfor %}
+    </div>
 </section>
 {% endblock %}
 

@@ -1,33 +1,37 @@
 {% extends "base.html" %}
 {% block title %}P5 — Mẫu quyết toán — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">P5 · Mẫu QT</span>
+{% endblock %}
 
 {% block content %}
 {% include "phases/_phase_head.html" %}
 
 <section class="section">
-    <div class="metric-strip kpi-glow">
-        <div class="metric primary"><div class="label">Mẫu 15 — NVL</div><div class="value">{{ counts.m15 | num }}</div><div class="delta">dòng (mã NVL)</div></div>
-        <div class="metric success"><div class="label">Mẫu 15a — TP XK</div><div class="value">{{ counts.m15a | num }}</div><div class="delta">mã thành phẩm</div></div>
-        <div class="metric"><div class="label">Mẫu 16 — định mức</div><div class="value">{{ counts.m16 | num }}</div><div class="delta">{{ counts.tp_xk | num }} TP × NVL gốc</div></div>
-        <div class="metric warning"><div class="label">Vòng tròn sản xuất</div><div class="value">{{ n_cycles }}</div><div class="delta">{{ n_cycle_nodes }} mã trong cycle · <a href="/c/{{ company.slug }}/phase/5/cycles">xem →</a></div></div>
+    <div class="kpi">
+        <div class="kpi-cell primary"><div class="k">Mẫu 15 — NVL</div><div class="v">{{ counts.m15 | num }}</div><div class="d">dòng (mã NVL)</div></div>
+        <div class="kpi-cell success"><div class="k">Mẫu 15a — TP XK</div><div class="v">{{ counts.m15a | num }}</div><div class="d">mã thành phẩm</div></div>
+        <div class="kpi-cell"><div class="k">Mẫu 16 — định mức</div><div class="v">{{ counts.m16 | num }}</div><div class="d">{{ counts.tp_xk | num }} TP × NVL gốc</div></div>
+        <div class="kpi-cell warning"><div class="k">Vòng tròn SX</div><div class="v">{{ n_cycles }}</div><div class="d">{{ n_cycle_nodes }} mã · <a href="/c/{{ company.slug }}/phase/5/cycles">chi tiết →</a></div></div>
     </div>
 </section>
 
 <section class="section">
-    <div class="row-between" style="margin-bottom: 16px; flex-wrap: wrap;">
+    <div class="row-between" style="margin-bottom: 12px; flex-wrap: wrap;">
         <div class="tabs">
-            <a class="tab {% if form == 'm15' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m15">Mẫu 15 — NVL</a>
-            <a class="tab {% if form == 'm15a' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m15a">Mẫu 15a — TP</a>
-            <a class="tab {% if form == 'm16' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m16">Mẫu 16 — Định mức</a>
+            <a class="tab {% if form == 'm15' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m15">Mẫu 15 · NVL</a>
+            <a class="tab {% if form == 'm15a' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m15a">Mẫu 15a · TP</a>
+            <a class="tab {% if form == 'm16' %}active{% endif %}" href="/c/{{ company.slug }}/phase/5?form=m16">Mẫu 16 · Định mức</a>
         </div>
-        <form action="/c/{{ company.slug }}/phase/5" method="get" style="display: flex; gap: 8px;">
+        <form action="/c/{{ company.slug }}/phase/5" method="get" style="display: flex; gap: 6px;">
             <input type="hidden" name="form" value="{{ form }}">
             <input class="input" type="search" name="q" placeholder="Tìm theo mã…" value="{{ q }}" style="min-width: 220px;">
-            <button class="btn btn-ghost" type="submit">Tìm</button>
+            <button class="btn btn-sm" type="submit">Tìm</button>
         </form>
     </div>
 
-    <div class="table-wrap">
+    <div class="panel"><div class="table-wrap">
         {% if form == 'm15' %}
         <table class="data">
             <thead><tr>
@@ -95,7 +99,7 @@
             </tbody>
         </table>
         {% endif %}
-    </div>
-    <p class="tiny muted" style="margin-top: 10px;">Hiển thị tối đa 100 dòng. Dùng ô tìm kiếm để lọc theo mã.</p>
+    </div></div>
+    <p class="tiny muted" style="margin-top: 8px;">Hiển thị tối đa 100 dòng. Dùng ô tìm kiếm để lọc theo mã.</p>
 </section>
 {% endblock %}

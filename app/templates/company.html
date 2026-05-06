@@ -1,65 +1,112 @@
 {% extends "base.html" %}
 {% block title %}{{ company.name }} — BCQT Showcase{% endblock %}
+{% block crumb %}
+<span class="sep">/</span>
+<span class="here">{{ company.name }}</span>
+{% endblock %}
 
 {% block content %}
-<section class="fade-in stack">
-    <div class="row" style="gap: 10px;">
-        <span class="badge {% if company.is_demo %}neutral{% else %}success{% endif %}">{% if company.is_demo %}Demo (số liệu ẩn danh){% else %}Live{% endif %}</span>
-        <span class="badge info">{{ company.customs_office or "—" }}</span>
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>{{ company.name }}</h1>
+            <div class="meta">
+                {{ company.industry or "—" }} · {{ company.province or "—" }} · MST {{ company.tax_code or "—" }} · {{ company.customs_office or "—" }} · HĐ từ {{ company.operations_start.strftime("%m/%Y") if company.operations_start else "—" }}
+            </div>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-sm" disabled>Xuất PDF</button>
+            <button class="btn btn-sm" disabled>Tải mẫu Excel</button>
+            <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/phase/5">Mở Mẫu QT →</a>
+        </div>
     </div>
-    <div>
-        <h1 style="font-size: 32px; letter-spacing: -0.02em;">{{ company.name }}</h1>
-        <p class="muted" style="margin-top: 6px;">{{ company.industry or "—" }} · {{ company.province or "—" }} · MST {{ company.tax_code or "—" }}</p>
-    </div>
-    <p class="small">{{ company.summary or "" }}</p>
-</section>
+</div>
 
 <section class="section">
     <div class="section-head">
-        <h2>6 giai đoạn pipeline</h2>
-        <div class="meta">Click vào mỗi step để xem chi tiết.</div>
+        <h2>Trạng thái pipeline</h2>
+        <div class="meta">{{ phase_runs | length }} / 6 phase đã chạy.</div>
     </div>
-    <div class="phase-rail">
+    <div class="phase-tracker">
         {% for run in phase_runs %}
-        <a class="phase-step {% if run.status == 'done' %}done{% elif run.status == 'running' %}active{% endif %}" href="/c/{{ company.slug }}/phase/{{ run.phase_no }}">
+        <a class="ph-step {{ 'done' if run.status == 'done' else 'active' if run.status == 'running' else '' }}"
+           href="/c/{{ company.slug }}/phase/{{ run.phase_no }}">
+            <span class="stat">{{ "✓ done" if run.status == "done" else run.status }}</span>
             <h4>{{ run.name }}</h4>
-            <div class="meta">{{ run.summary[:100] if run.summary else "" }}{% if run.summary and run.summary|length > 100 %}…{% endif %}</div>
+            <div class="meta">{% set m = run.metrics_json | metrics %}
+                {% if m %}
+                    {% set first_key = m.keys() | list | first %}
+                    {% set first_val = m[first_key] %}
+                    {{ first_val | num }} {{ first_key.replace('_', ' ') }}
+                {% endif %}
+            </div>
         </a>
         {% endfor %}
     </div>
 </section>
 
-<section class="section">
-    <div class="section-head">
-        <h2>KPI tổng kết</h2>
-        <div class="meta">Trích từ metrics_json mỗi phase.</div>
-    </div>
-    <div class="stack">
-        {% for run in phase_runs %}
-        {% set m = run.metrics_json | metrics %}
-        <div class="card">
-            <div class="row-between">
-                <div>
+<div class="grid-12" style="margin-top: 22px;">
+    <section class="section" style="margin-top: 0;">
+        <div class="section-head"><h2>Chi tiết từng phase</h2></div>
+        <div class="stack">
+            {% for run in phase_runs %}
+            {% set m = run.metrics_json | metrics %}
+            <div class="panel">
+                <div class="panel-head">
                     <div class="row" style="gap: 10px;">
-                        <span class="badge {% if run.status == 'done' %}success{% else %}neutral{% endif %}">P{{ run.phase_no }}</span>
+                        <span class="badge primary mono">P{{ run.phase_no }}</span>
                         <h3>{{ run.name }}</h3>
                     </div>
-                    <p class="small muted" style="margin-top: 6px;">{{ run.summary }}</p>
+                    <div class="row" style="gap: 8px;">
+                        <span class="status done">Done</span>
+                        <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/{{ run.phase_no }}">Mở →</a>
+                    </div>
                 </div>
-                <a class="btn btn-ghost" href="/c/{{ company.slug }}/phase/{{ run.phase_no }}">Mở →</a>
-            </div>
-            {% if m %}
-            <div class="metric-strip" style="margin-top: 16px;">
-                {% for k, v in m.items() %}
-                <div class="metric">
-                    <div class="label">{{ k.replace('_', ' ') }}</div>
-                    <div class="value">{{ v | num }}</div>
+                <div class="panel-body">
+                    <p class="small muted">{{ run.summary }}</p>
+                    {% if m %}
+                    <div class="kpi" style="margin-top: 12px;">
+                        {% for k, v in m.items() %}
+                        <div class="kpi-cell">
+                            <div class="k">{{ k.replace('_', ' ') }}</div>
+                            <div class="v">{{ v | num }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
-                {% endfor %}
             </div>
-            {% endif %}
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
-</section>
+    </section>
+
+    <aside class="section" style="margin-top: 0;">
+        <div class="section-head"><h2>Hồ sơ</h2></div>
+        <div class="panel">
+            <div class="panel-body dense">
+                <div class="row-line"><span class="key">Slug</span><span class="val mono">{{ company.slug }}</span></div>
+                <div class="row-line"><span class="key">MST</span><span class="val mono">{{ company.tax_code or "—" }}</span></div>
+                <div class="row-line"><span class="key">Tỉnh/TP</span><span class="val">{{ company.province or "—" }}</span></div>
+                <div class="row-line"><span class="key">Cơ quan HQ</span><span class="val">{{ company.customs_office or "—" }}</span></div>
+                <div class="row-line"><span class="key">Ngành</span><span class="val small">{{ company.industry or "—" }}</span></div>
+                <div class="row-line"><span class="key">HĐ từ</span><span class="val mono">{{ company.operations_start or "—" }}</span></div>
+                <div class="row-line"><span class="key">Loại</span><span class="val"><span class="badge {% if company.is_demo %}neutral{% else %}success{% endif %}">{% if company.is_demo %}Demo / ẩn danh{% else %}Live{% endif %}</span></span></div>
+            </div>
+        </div>
+
+        <div class="section-head" style="margin-top: 18px;"><h2>Mô tả</h2></div>
+        <div class="panel"><div class="panel-body"><p class="small">{{ company.summary }}</p></div></div>
+
+        <div class="section-head" style="margin-top: 18px;"><h2>Truy cập nhanh</h2></div>
+        <div class="panel">
+            <div class="panel-body dense">
+                <a class="row-line" href="/c/{{ company.slug }}/phase/5"><span class="badge primary">M15</span><span class="val small" style="flex:1;">Mẫu 15 — NVL</span><span class="tiny muted">→</span></a>
+                <a class="row-line" href="/c/{{ company.slug }}/phase/5?form=m15a"><span class="badge primary">M15a</span><span class="val small" style="flex:1;">Mẫu 15a — TP XK</span><span class="tiny muted">→</span></a>
+                <a class="row-line" href="/c/{{ company.slug }}/phase/5?form=m16"><span class="badge primary">M16</span><span class="val small" style="flex:1;">Mẫu 16 — Định mức</span><span class="tiny muted">→</span></a>
+                <a class="row-line" href="/c/{{ company.slug }}/phase/5/cycles"><span class="badge warning">Cyc</span><span class="val small" style="flex:1;">Vòng tròn sản xuất</span><span class="tiny muted">→</span></a>
+                <a class="row-line" href="/c/{{ company.slug }}/phase/6"><span class="badge success">Val</span><span class="val small" style="flex:1;">Validate cuối</span><span class="tiny muted">→</span></a>
+            </div>
+        </div>
+    </aside>
+</div>
 {% endblock %}

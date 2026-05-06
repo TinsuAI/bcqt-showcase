@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.config import settings
 from app.db import Base, engine
-from app.routes import companies, landing, phases
+from app.routes import companies, insights, landing, phases
 from app.utils import fmt_money, fmt_num, fmt_pct, parse_metrics
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -43,3 +43,4 @@ app.state.render = render
 app.include_router(landing.router)
 app.include_router(companies.router)
 app.include_router(phases.router)
+app.include_router(insights.router)

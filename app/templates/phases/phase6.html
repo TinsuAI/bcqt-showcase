@@ -1,23 +1,27 @@
 {% extends "base.html" %}
 {% block title %}P6 — Validate — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">P6 · Validate</span>
+{% endblock %}
 
 {% block content %}
 {% include "phases/_phase_head.html" %}
 
 <section class="section">
-    <div class="metric-strip kpi-glow">
-        <div class="metric success"><div class="label">Tổng test</div><div class="value">{{ n_pass }}/{{ n_total }}</div><div class="delta">PASS</div></div>
-        <div class="metric"><div class="label">Khung pháp lý</div><div class="value">TT 39</div><div class="delta">/2018/TT-BTC</div></div>
-        <div class="metric primary"><div class="label">Traceability NVL</div><div class="value">99,4%</div><div class="delta">4.686.078 / 4.716.730 đơn vị giải trình được</div></div>
+    <div class="kpi">
+        <div class="kpi-cell success"><div class="k">Tổng test</div><div class="v">{{ n_pass }}/{{ n_total }}</div><div class="d">PASS</div></div>
+        <div class="kpi-cell"><div class="k">Khung pháp lý</div><div class="v">TT 39</div><div class="d">/2018/TT-BTC</div></div>
+        <div class="kpi-cell primary"><div class="k">Traceability NVL</div><div class="v">99,9%</div><div class="d">4.750.685 / 4.757.304 đv · residual 6.619</div></div>
     </div>
 </section>
 
 <section class="section">
     <div class="section-head">
         <h2>Kết quả validate</h2>
-        <div class="meta">Mỗi test áp một bất biến (mass conservation, khớp HQ, không âm…). Fail ở bất kỳ test nào → quay lại Phase 5.</div>
+        <div class="meta">Mỗi test áp một bất biến (mass conservation, khớp HQ, không âm…). Fail bất kỳ test nào → quay lại Phase 5.</div>
     </div>
-    <div class="table-wrap">
+    <div class="panel"><div class="table-wrap">
         <table class="data">
             <thead><tr><th>Mã</th><th>Tên test</th><th>Kết quả</th><th>Kỳ vọng</th><th>Thực tế</th><th class="num">Sai số %</th></tr></thead>
             <tbody>
@@ -33,6 +37,6 @@
                 {% endfor %}
             </tbody>
         </table>
-    </div>
+    </div></div>
 </section>
 {% endblock %}

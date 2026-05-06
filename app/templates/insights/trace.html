@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Truy vết NVL — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Truy vết NVL</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Truy vết một mã NVL</h1>
+            <div class="meta">
+                Hải quan thanh tra: "Mã NVL X nhập khẩu năm 2025 đã được dùng vào đâu?" — đây là cách trả lời defensible.
+            </div>
+        </div>
+        <div class="page-actions">
+            <span class="badge success">{{ pct_overall | num(1) }}% truy được</span>
+            <span class="badge neutral">{{ n_total | num }} mã</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="kpi">
+        <div class="kpi-cell primary">
+            <div class="k">Tổng xuất sản xuất</div>
+            <div class="v">{{ total_xuat | num(0) }}</div>
+            <div class="d">đơn vị (tổng tiêu hao MB51 261)</div>
+        </div>
+        <div class="kpi-cell success">
+            <div class="k">Đã truy được</div>
+            <div class="v">{{ total_giai | num(0) }}</div>
+            <div class="d">{{ pct_overall | num(1) }}% — vào TP XK / TP tồn / BTP tồn</div>
+        </div>
+        <div class="kpi-cell warning">
+            <div class="k">Chưa truy được</div>
+            <div class="v">{{ total_con | num(0) }}</div>
+            <div class="d">{{ ((total_con / total_xuat * 100) if total_xuat else 0) | num(2) }}% — cần giải trình</div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="panel">
+        <div class="panel-head">
+            <h3>Tra cứu mã NVL</h3>
+            <span class="meta">Nhập mã chính xác hoặc click một mã đề xuất.</span>
+        </div>
+        <div class="panel-body">
+            <form action="/c/{{ company.slug }}/trace" method="get" style="display: flex; gap: 8px;">
+                <input class="input" type="search" name="q" placeholder="VD: 1000530844, 1000533710, …" value="{{ q }}" style="max-width: 320px;">
+                <button class="btn btn-primary btn-sm" type="submit">Truy vết</button>
+            </form>
+            {% if not selected %}
+            <div class="tiny muted" style="margin-top: 14px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Top 8 mã có lượng tiêu hao lớn nhất</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                {% for s in suggestions %}
+                <a class="badge primary mono" href="/c/{{ company.slug }}/trace?q={{ s.material }}">{{ s.material }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% if q and not selected %}
+<section class="section">
+    <div class="panel"><div class="no-data">Không tìm thấy mã <code class="mono">{{ q }}</code> trong dữ liệu truy vết.</div></div>
+</section>
+{% endif %}
+
+{% if selected %}
+<section class="section">
+    <div class="section-head">
+        <h2>Vòng đời mã <span class="mono">{{ selected.material }}</span></h2>
+        <div class="meta">{{ selected.description or "" }}</div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-body">
+            <div class="lifecycle">
+                <div class="lc-step">
+                    <div class="lc-num">1</div>
+                    <div class="lc-body">
+                        <div class="lc-title">Xuất ra sản xuất</div>
+                        <div class="lc-meta">Tổng SL xuất kho cho lệnh sản xuất (MvT 261 + 262)</div>
+                        <div class="lc-val">{{ selected.xuat_sx | num(2) }}</div>
+                    </div>
+                </div>
+
+                <div class="lc-arrow">↓ phân bổ ↓</div>
+
+                <div class="lc-row">
+                    <div class="lc-cell ok">
+                        <div class="lc-num">2a</div>
+                        <div class="lc-title">Vào TP đã xuất khẩu</div>
+                        <div class="lc-meta">Defended bằng tờ khai E42</div>
+                        <div class="lc-val">{{ selected.cho_xuat_khau | num(2) }}</div>
+                    </div>
+                    <div class="lc-cell ok">
+                        <div class="lc-num">2b</div>
+                        <div class="lc-title">Khoá trong TP tồn cuối</div>
+                        <div class="lc-meta">Mẫu 15a tồn kỳ tới</div>
+                        <div class="lc-val">{{ selected.trong_tp_ton | num(2) }}</div>
+                    </div>
+                    <div class="lc-cell ok">
+                        <div class="lc-num">2c</div>
+                        <div class="lc-title">Khoá trong BTP tồn cuối</div>
+                        <div class="lc-meta">Bán thành phẩm chưa thành TP</div>
+                        <div class="lc-val">{{ selected.trong_btp_ton | num(2) }}</div>
+                    </div>
+                </div>
+
+                <div class="lc-arrow">= cộng lại =</div>
+
+                <div class="lc-step success">
+                    <div class="lc-num">✓</div>
+                    <div class="lc-body">
+                        <div class="lc-title">Đã giải trình</div>
+                        <div class="lc-meta">{{ selected.pct_giai_trinh | num(2) }}% tổng xuất SX</div>
+                        <div class="lc-val">{{ selected.giai_trinh | num(2) }}</div>
+                    </div>
+                </div>
+
+                {% if selected.con_lai > 0.5 %}
+                <div class="lc-step warning">
+                    <div class="lc-num">!</div>
+                    <div class="lc-body">
+                        <div class="lc-title">Còn lại — cần giải trình thêm</div>
+                        <div class="lc-meta">Khả năng: hao hụt cắt dập, phế liệu chưa khai, sai mapping</div>
+                        <div class="lc-val">{{ selected.con_lai | num(2) }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if consumed_by %}
+<section class="section">
+    <div class="section-head">
+        <h2>Mã được dùng cho TP nào (Mẫu 16)</h2>
+        <div class="meta">Định mức công bố từng TP có dùng mã này. Sắp xếp theo định mức giảm dần.</div>
+    </div>
+    <div class="panel"><div class="table-wrap">
+        <table class="data">
+            <thead><tr>
+                <th>Mã TP XK</th><th>Tên TP</th><th>UOM TP</th>
+                <th class="num">Định mức (NVL/TP)</th><th>Ghi chú</th>
+            </tr></thead>
+            <tbody>
+                {% for r in consumed_by %}
+                <tr>
+                    <td class="mono">{{ r.tp_code }}</td>
+                    <td class="small">{{ r.tp_name or "" }}</td>
+                    <td>{{ r.tp_uom or "" }}</td>
+                    <td class="num">{{ r.norm | num(6) }}</td>
+                    <td class="small muted">{{ r.note or "" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div></div>
+    <p class="tiny muted" style="margin-top: 6px;">Hiển thị tối đa 20 TP có định mức cao nhất.</p>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}
