@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% from "_macros.html" import legal_ref %}
+{% block title %}BCQT — Mẫu nộp Hải quan — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">BCQT — Mẫu nộp HQ</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Báo cáo Quyết toán Hải quan — kỳ 2025</h1>
+            <div class="meta">
+                3 mẫu chính thức để nộp hải quan theo {{ legal_ref("TT 39/2018 K35Đ1") }}, đã qua 9/9 kiểm thử bất biến cuối.
+            </div>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/dossier">📦 Tải hồ sơ giải trình</a>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="grid-3">
+        <div class="panel">
+            <div class="panel-head">
+                <h3>Mẫu 15 — NVL nhập-xuất-tồn</h3>
+                <span class="badge primary mono">M15</span>
+            </div>
+            <div class="panel-body">
+                <p class="small muted">{{ legal_ref("PL V Mẫu 15/15a") }} — Báo cáo nhập-xuất-tồn nguyên liệu, vật tư trong kỳ.</p>
+                <div class="kpi" style="grid-template-columns: 1fr; margin-top: 12px;">
+                    <div class="kpi-cell primary">
+                        <div class="k">Số mã NVL</div>
+                        <div class="v">{{ counts.m15 | num }}</div>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 12px; gap: 6px; flex-wrap: wrap;">
+                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau15">⬇ Tải CSV</a>
+                    <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/5?form=m15">Xem trên web</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <h3>Mẫu 15a — TP xuất khẩu</h3>
+                <span class="badge primary mono">M15a</span>
+            </div>
+            <div class="panel-body">
+                <p class="small muted">{{ legal_ref("PL V Mẫu 15/15a") }} — Báo cáo nhập-xuất-tồn thành phẩm xuất khẩu hoàn chỉnh.</p>
+                <div class="kpi" style="grid-template-columns: 1fr; margin-top: 12px;">
+                    <div class="kpi-cell success">
+                        <div class="k">Số mã TP XK</div>
+                        <div class="v">{{ counts.m15a | num }}</div>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 12px; gap: 6px; flex-wrap: wrap;">
+                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau15a">⬇ Tải CSV</a>
+                    <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/5?form=m15a">Xem trên web</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <h3>Mẫu 16 — Định mức thực tế</h3>
+                <span class="badge primary mono">M16</span>
+            </div>
+            <div class="panel-body">
+                <p class="small muted">{{ legal_ref("PL II Mẫu 16") }} — Định mức thực tế NVL gốc ↔ TP xuất khẩu.</p>
+                <div class="kpi" style="grid-template-columns: 1fr; margin-top: 12px;">
+                    <div class="kpi-cell">
+                        <div class="k">Số dòng định mức</div>
+                        <div class="v">{{ counts.m16 | num }}</div>
+                        <div class="d">{{ counts.tp_xk | num }} TP × NVL gốc</div>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 12px; gap: 6px; flex-wrap: wrap;">
+                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau16">⬇ Tải CSV</a>
+                    <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/5?form=m16">Xem trên web</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Báo cáo từng phase (PDF)</h2>
+        <div class="meta">Tài liệu giải trình cho từng giai đoạn pipeline — kèm hình ảnh, bảng số liệu, các quyết định nghiệp vụ.</div>
+    </div>
+    <div class="grid-3">
+        {% for k in ["phase1_pdf", "phase2_pdf", "phase3_pdf", "phase4_pdf", "phase5_pdf"] %}
+        {% set info = exports[k] %}
+        <a class="panel pdf-card" href="/c/{{ company.slug }}/download/{{ k }}">
+            <div class="panel-body">
+                <div class="row" style="gap: 10px;">
+                    <span class="pdf-icon">PDF</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="small" style="font-weight: 600;">{{ info.label }}</div>
+                        <div class="tiny muted mono">{{ info.file }}</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import legal_ref %}
+{% block title %}Hồ sơ giải trình — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Hồ sơ giải trình</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Hồ sơ giải trình nội bộ</h1>
+            <div class="meta">
+                File Excel kèm theo BCQT — {{ sheets | length }} sheet ghi lại từng quyết định nghiệp vụ
+                để cán bộ hải quan có thể truy ngược khi kiểm tra. Đáp ứng yêu cầu lưu giữ tài liệu của
+                {{ legal_ref("TT 39/2018 K35Đ1") }} và {{ legal_ref("TT 121/2025") }}.
+            </div>
+        </div>
+        <div class="page-actions">
+            <a class="btn btn-primary" href="/c/{{ company.slug }}/download/dossier">📦 Tải hồ sơ đầy đủ (.xlsx)</a>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Nội dung 12 sheet</h2>
+        <div class="meta">Mỗi sheet trả lời một loại câu hỏi của cán bộ hải quan khi thanh tra.</div>
+    </div>
+    <div class="stack-sm">
+        {% for s in sheets %}
+        <div class="dossier-row">
+            <div class="dossier-key">
+                <span class="badge primary mono tiny">{{ loop.index }}</span>
+                <code class="mono small">{{ s.key }}</code>
+            </div>
+            <div class="dossier-body">
+                <div class="small" style="font-weight: 600;">{{ s.title }}</div>
+                <div class="tiny muted" style="margin-top: 2px;">{{ s.desc }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import FileResponse
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
@@ -530,6 +531,79 @@ def methodology(slug: str, request: Request, db: Session = Depends(get_db)):
     return request.app.state.render(request, "insights/methodology.html", company=c)
 
 
+@router.get("/download/{key}")
+def download(slug: str, key: str, db: Session = Depends(get_db)):
+    """Download whitelist files. Path-traversal safe."""
+    get_company_or_404(db, slug)
+    info = EXPORT_FILES.get(key)
+    if not info:
+        raise HTTPException(404, f"Unknown download key: {key}")
+    path = EXPORTS_DIR / info["file"]
+    if not path.exists():
+        raise HTTPException(404, f"File not available on server: {info['file']}")
+    return FileResponse(path, media_type=info["mime"], filename=info["file"])
+
+
+@router.get("/bcqt")
+def bcqt(slug: str, request: Request, db: Session = Depends(get_db)):
+    """Trang BCQT — preview Mẫu 15/15a/16 + download chính thức."""
+    from app.models import Mau15aRow, Mau15Row, Mau16Row
+    c = get_company_or_404(db, slug)
+    counts = {
+        "m15": db.scalar(select(func.count()).select_from(Mau15Row).where(Mau15Row.company_id == c.id)) or 0,
+        "m15a": db.scalar(select(func.count()).select_from(Mau15aRow).where(Mau15aRow.company_id == c.id)) or 0,
+        "m16": db.scalar(select(func.count()).select_from(Mau16Row).where(Mau16Row.company_id == c.id)) or 0,
+        "tp_xk": db.scalar(
+            select(func.count(func.distinct(Mau16Row.tp_code))).where(Mau16Row.company_id == c.id)
+        ) or 0,
+    }
+    files_available = {k: (EXPORTS_DIR / v["file"]).exists() for k, v in EXPORT_FILES.items()}
+    return request.app.state.render(
+        request, "insights/bcqt.html",
+        company=c, counts=counts, files_available=files_available, exports=EXPORT_FILES,
+    )
+
+
+@router.get("/dossier")
+def dossier(slug: str, request: Request, db: Session = Depends(get_db)):
+    """Trang Hồ sơ giải trình — list 12 sheet với mô tả + download."""
+    c = get_company_or_404(db, slug)
+    sheets = [
+        {"key": "Material_Classification", "title": "Phân loại vật tư",
+         "desc": "20.064 mã được phân loại NVL/BTP/TP/CCDC, kèm cờ mâu thuẫn nếu có."},
+        {"key": "BOM_Direct", "title": "Quan hệ định mức trực tiếp",
+         "desc": "35.636 cạnh — từng cặp đầu ra ← đầu vào theo lệnh sản xuất thực tế."},
+        {"key": "BOM_Flat", "title": "Định mức sau khi đưa BTP về NVL gốc",
+         "desc": "57.054 dòng — quan hệ flatten qua các cấp BTP, dùng để sinh Mẫu 16."},
+        {"key": "Order_Detail", "title": "Chi tiết lệnh sản xuất",
+         "desc": "107.999 bản ghi — từng lệnh SX với đầu vào và đầu ra."},
+        {"key": "T02_Applied", "title": "Áp dụng quy đổi UOM",
+         "desc": "Các trường hợp UOM giữa SAP và HQ khác đơn vị (vd KG ↔ MT)."},
+        {"key": "Dual_Source_FIFO", "title": "FIFO cho NVL nhiều nguồn",
+         "desc": "556 mã có cả nguồn HQ và nội bộ — phân bổ theo trình tự thời gian xuất kho."},
+        {"key": "Nguon_Kep_Phan_Bo", "title": "Phân bổ NVL nguồn kép",
+         "desc": "Cụ thể số lượng từng kỳ phân về phần qua HQ vs phần nội bộ."},
+        {"key": "Conversion_Orders", "title": "Lệnh chuyển đổi phiên bản",
+         "desc": "167 lệnh — chuyển đổi 1:1 giữa các phiên bản TP, không tiêu hao NVL mới."},
+        {"key": "BOM_Cycles", "title": "Vòng tròn sản xuất",
+         "desc": "20 nhóm × 44 mã liên thông qua chuyển đổi phiên bản, đã giải đóng."},
+        {"key": "Warnings", "title": "Cảnh báo kỹ thuật",
+         "desc": "Các trường hợp ranh giới phát hiện trong khi chạy pipeline."},
+        {"key": "Validation", "title": "Kiểm thử bất biến cuối",
+         "desc": "9 kiểm thử: bảo toàn khối lượng, khớp HQ, không âm — 9/9 đạt."},
+        {"key": "NVL_Traceability", "title": "Truy vết NVL",
+         "desc": "4.101 mã NVL: xuất sản xuất → vào TP / khoá tồn / còn lại."},
+    ]
+    return request.app.state.render(request, "insights/dossier.html", company=c, sheets=sheets)
+
+
+@router.get("/overview")
+def overview(slug: str, request: Request, db: Session = Depends(get_db)):
+    """Trang Tổng quan dự án — workflow visual cho audience không kỹ thuật."""
+    c = get_company_or_404(db, slug)
+    return request.app.state.render(request, "insights/overview.html", company=c)
+
+
 @router.get("/runs")
 def runs(slug: str, request: Request, db: Session = Depends(get_db)):
     c = get_company_or_404(db, slug)
@@ -600,6 +674,21 @@ RULE_FILES = [
 
 
 CONFIGS_DIR = Path(__file__).resolve().parent.parent.parent / "configs"
+EXPORTS_DIR = Path(__file__).resolve().parent.parent.parent / "exports"
+
+# Whitelist files có thể download — tránh path traversal
+EXPORT_FILES = {
+    "mau15": {"file": "Mau_15_NVL_v12.0.csv", "label": "Mẫu 15 — NVL nhập-xuất-tồn", "mime": "text/csv"},
+    "mau15a": {"file": "Mau_15a_SP_v12.0.csv", "label": "Mẫu 15a — TP xuất khẩu nhập-xuất-tồn", "mime": "text/csv"},
+    "mau16": {"file": "Mau_16_DMTT_v12.0.csv", "label": "Mẫu 16 — Định mức thực tế", "mime": "text/csv"},
+    "dossier": {"file": "HO_SO_GIAI_TRINH_v12.0.xlsx", "label": "Hồ sơ giải trình (12 sheet)",
+                "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+    "phase1_pdf": {"file": "BAO_CAO_PHASE_1.pdf", "label": "Báo cáo Phase 1 — Chuẩn hoá", "mime": "application/pdf"},
+    "phase2_pdf": {"file": "BAO_CAO_PHASE_2.pdf", "label": "Báo cáo Phase 2 — Bổ sung", "mime": "application/pdf"},
+    "phase3_pdf": {"file": "BAO_CAO_PHASE_3.pdf", "label": "Báo cáo Phase 3 — Audit", "mime": "application/pdf"},
+    "phase4_pdf": {"file": "BAO_CAO_PHASE_4.pdf", "label": "Báo cáo Phase 4 — Điều tra", "mime": "application/pdf"},
+    "phase5_pdf": {"file": "BAO_CAO_PHASE_5_V4.pdf", "label": "Báo cáo Phase 5 — Mẫu QT", "mime": "application/pdf"},
+}
 
 
 def _load_yaml_file(key: str) -> tuple[str | None, int, Any]:

@@ -35,13 +35,15 @@
         <div class="rail-section">
             <div class="rail-section-label">{{ slug | upper }} — Pipeline</div>
             <a href="{{ base }}" {% if p == base %}class="active"{% endif %}>Tổng quan công ty</a>
+            <a href="{{ base }}/overview" {% if "/overview" in p %}class="active"{% endif %}>Tổng quan dự án</a>
             <a href="{{ base }}/phase/1" {% if "/phase/1" in p %}class="active"{% endif %}>P1 · Chuẩn hoá</a>
             <a href="{{ base }}/phase/2" {% if "/phase/2" in p %}class="active"{% endif %}>P2 · Bổ sung</a>
             <a href="{{ base }}/phase/3" {% if "/phase/3" in p %}class="active"{% endif %}>P3 · Audit</a>
             <a href="{{ base }}/phase/4" {% if "/phase/4" in p %}class="active"{% endif %}>P4 · Điều tra</a>
             <a href="{{ base }}/phase/5" {% if "/phase/5" in p and "cycles" not in p %}class="active"{% endif %}>P5 · Mẫu QT</a>
-            <a href="{{ base }}/phase/5/cycles" {% if "cycles" in p %}class="active"{% endif %}>P5 · Vòng tròn SX</a>
             <a href="{{ base }}/phase/6" {% if "/phase/6" in p %}class="active"{% endif %}>P6 · Validate</a>
+            <a href="{{ base }}/bcqt" {% if "/bcqt" in p %}class="active"{% endif %}>BCQT — Mẫu nộp HQ</a>
+            <a href="{{ base }}/dossier" {% if "/dossier" in p %}class="active"{% endif %}>Hồ sơ giải trình</a>
         </div>
 
         <div class="rail-section">
@@ -50,6 +52,7 @@
             <a href="{{ base }}/crosscheck" {% if "/crosscheck" in p %}class="active"{% endif %}>Tự đối chiếu chéo</a>
             <a href="{{ base }}/trace" {% if "/trace" in p %}class="active"{% endif %}>Truy vết NVL</a>
             <a href="{{ base }}/bom" {% if "/bom" in p %}class="active"{% endif %}>Đồ thị định mức</a>
+            <a href="{{ base }}/phase/5/cycles" {% if "cycles" in p %}class="active"{% endif %}>Vòng tròn sản xuất</a>
             <a href="{{ base }}/log" {% if "/log" in p %}class="active"{% endif %}>Nhật ký xử lý</a>
         </div>
 

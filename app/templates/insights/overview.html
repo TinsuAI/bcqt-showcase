@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% from "_macros.html" import legal_ref %}
+{% block title %}Tổng quan dự án — {{ company.name }}{% endblock %}
+{% block crumb %}
+<span class="sep">/</span><a href="/c/{{ company.slug }}">{{ company.name }}</a>
+<span class="sep">/</span><span class="here">Tổng quan dự án</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-head-row">
+        <div>
+            <h1>Cách dự án vận hành</h1>
+            <div class="meta">
+                Từ dữ liệu thô của doanh nghiệp đến mẫu nộp hải quan — qua 6 giai đoạn xử lý có thể đối chiếu được.
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="section-head"><h2>Sơ đồ tổng thể</h2></div>
+    <div class="panel"><div class="panel-body">
+        <div class="flow-diagram">
+            <!-- INPUT layer -->
+            <div class="flow-row flow-input">
+                <div class="flow-box flow-box-input">
+                    <div class="fb-tag">SAP</div>
+                    <div class="fb-title">MB51</div>
+                    <div class="fb-desc">Chuyển động kho<br>243K dòng</div>
+                </div>
+                <div class="flow-box flow-box-input">
+                    <div class="fb-tag">SAP</div>
+                    <div class="fb-title">MB5B</div>
+                    <div class="fb-desc">Tồn kho + Material Master<br>20K mã</div>
+                </div>
+                <div class="flow-box flow-box-input">
+                    <div class="fb-tag">VNACCS</div>
+                    <div class="fb-title">BCCT</div>
+                    <div class="fb-desc">Tờ khai HQ<br>37K dòng</div>
+                </div>
+            </div>
+
+            <div class="flow-arrow-down">⬇</div>
+
+            <!-- 6-phase pipeline -->
+            <div class="flow-pipeline">
+                <a class="flow-phase" href="/c/{{ company.slug }}/phase/1">
+                    <div class="fp-num">P1</div>
+                    <div class="fp-title">Chuẩn hoá</div>
+                    <div class="fp-desc">Làm sạch, dedup, convert ngày</div>
+                </a>
+                <a class="flow-phase" href="/c/{{ company.slug }}/phase/2">
+                    <div class="fp-num">P2</div>
+                    <div class="fp-title">Bổ sung</div>
+                    <div class="fp-desc">Phân loại NVL/BTP/TP/CCDC</div>
+                </a>
+                <a class="flow-phase" href="/c/{{ company.slug }}/phase/3">
+                    <div class="fp-num">P3</div>
+                    <div class="fp-title">Audit</div>
+                    <div class="fp-desc">13 kiểm tra + 5 đối chiếu chéo</div>
+                </a>
+                <a class="flow-phase" href="/c/{{ company.slug }}/phase/4">
+                    <div class="fp-num">P4</div>
+                    <div class="fp-title">Điều tra</div>
+                    <div class="fp-desc">Nguyên nhân các sai khác</div>
+                </a>
+                <a class="flow-phase" href="/c/{{ company.slug }}/phase/5">
+                    <div class="fp-num">P5</div>
+                    <div class="fp-title">Lập mẫu</div>
+                    <div class="fp-desc">Sinh Mẫu 15/15a/16</div>
+                </a>
+                <a class="flow-phase" href="/c/{{ company.slug }}/phase/6">
+                    <div class="fp-num">P6</div>
+                    <div class="fp-title">Xác thực</div>
+                    <div class="fp-desc">9 kiểm thử bất biến cuối</div>
+                </a>
+            </div>
+
+            <div class="flow-arrow-down">⬇</div>
+
+            <!-- OUTPUT layer -->
+            <div class="flow-row flow-output">
+                <a class="flow-box flow-box-output" href="/c/{{ company.slug }}/bcqt">
+                    <div class="fb-tag">Nộp HQ</div>
+                    <div class="fb-title">Mẫu 15 / 15a / 16</div>
+                    <div class="fb-desc">3 mẫu chính thức<br>theo TT 39/2018</div>
+                </a>
+                <a class="flow-box flow-box-output" href="/c/{{ company.slug }}/dossier">
+                    <div class="fb-tag">Lưu nội bộ</div>
+                    <div class="fb-title">Hồ sơ giải trình</div>
+                    <div class="fb-desc">12 sheet truy vết<br>để giải trình thanh tra</div>
+                </a>
+            </div>
+        </div>
+    </div></div>
+</section>
+
+<section class="section">
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-head"><h3>Đặc điểm khác biệt</h3></div>
+            <div class="panel-body">
+                <ul class="overview-list">
+                    <li>
+                        <strong>Trích xuất, không tự tạo.</strong>
+                        Định mức công bố trên Mẫu 16 được tính bình quân từ chính lệnh sản xuất thực tế trong SAP — không phải BOM lý thuyết.
+                    </li>
+                    <li>
+                        <strong>Truy vết được mỗi đơn vị NVL.</strong>
+                        Mỗi đơn vị NVL nhập về phải đi vào TP xuất khẩu, tồn kho, hoặc giải trình hao hụt — không có "biến mất".
+                    </li>
+                    <li>
+                        <strong>Phát hiện sai khác sớm.</strong>
+                        Cross-check 3 chiều SAP/VNACCS/MB5B trước khi sinh mẫu — không để sai sót dồn đến lúc nộp.
+                    </li>
+                    <li>
+                        <strong>Defensible từng quyết định.</strong>
+                        Mọi mã có mâu thuẫn / phân loại đặc biệt đều ghi vào nhật ký xử lý — đối chiếu được khi cán bộ HQ hỏi.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head"><h3>Khung pháp lý áp dụng</h3></div>
+            <div class="panel-body">
+                <div class="doc-strip">
+                    <div class="doc-line">{{ legal_ref("TT 38/2015 Đ55") }}<span class="desc">Định mức thực tế</span></div>
+                    <div class="doc-line">{{ legal_ref("TT 39/2018 K35Đ1") }}<span class="desc">Sửa đổi Điều 55</span></div>
+                    <div class="doc-line">{{ legal_ref("TT 121/2025") }}<span class="desc">Quy đổi hàng dở dang</span></div>
+                    <div class="doc-line">{{ legal_ref("PL II Mẫu 16") }}<span class="desc">Định mức thực tế NVL ↔ TP XK</span></div>
+                    <div class="doc-line">{{ legal_ref("PL V Mẫu 15/15a") }}<span class="desc">Nhập-xuất-tồn NVL/TP</span></div>
+                    <div class="doc-line">{{ legal_ref("QĐ 1357/QĐ-TCHQ", "QĐ 1357") }}<span class="desc">Mã loại hình HQ</span></div>
+                    <div class="doc-line">{{ legal_ref("CV 3304/TCHQ-GSQL") }}<span class="desc">CCDC vs vật tư tiêu hao</span></div>
+                </div>
+                <p class="tiny muted" style="margin-top: 8px;">Di chuột vào tag để xem trích đoạn.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head"><h2>Vai trò của mỗi bên</h2></div>
+    <div class="panel">
+        <div class="panel-body dense">
+            <div class="row-line">
+                <div style="flex: 0 0 220px;">
+                    <div class="small" style="font-weight: 600;">Doanh nghiệp</div>
+                    <div class="tiny muted">Chủ sở hữu dữ liệu</div>
+                </div>
+                <div class="small" style="flex: 1;">
+                    Cung cấp dữ liệu thô SAP MB51, MB5B, BCCT VNACCS. Xác nhận các trường hợp mâu thuẫn phân loại nội bộ.
+                    Chịu trách nhiệm trước pháp luật theo {{ legal_ref("TT 39/2018 K35Đ1") }}.
+                </div>
+            </div>
+            <div class="row-line">
+                <div style="flex: 0 0 220px;">
+                    <div class="small" style="font-weight: 600;">Trọng Tín</div>
+                    <div class="tiny muted">Đơn vị xử lý</div>
+                </div>
+                <div class="small" style="flex: 1;">
+                    Vận hành pipeline 6 giai đoạn, sinh mẫu nộp HQ + hồ sơ giải trình. Không sửa dữ liệu gốc — mọi điều chỉnh đều ghi vào nhật ký xử lý có thể đối chiếu.
+                </div>
+            </div>
+            <div class="row-line">
+                <div style="flex: 0 0 220px;">
+                    <div class="small" style="font-weight: 600;">Cán bộ Hải quan</div>
+                    <div class="tiny muted">Người kiểm tra</div>
+                </div>
+                <div class="small" style="flex: 1;">
+                    Đối chiếu Mẫu 15/15a/16 với dữ liệu nội bộ HQ (VNACCS) và yêu cầu giải trình các điểm khác biệt.
+                    Hồ sơ giải trình kèm theo cho phép truy ngược tận từng mã, từng lệnh sản xuất.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="row" style="gap: 10px; flex-wrap: wrap;">
+        <a class="btn btn-primary" href="/c/{{ company.slug }}/bcqt">Xem 3 mẫu nộp HQ →</a>
+        <a class="btn" href="/c/{{ company.slug }}/dossier">Xem hồ sơ giải trình →</a>
+        <a class="btn" href="/c/{{ company.slug }}/methodology">Phương pháp luận →</a>
+    </div>
+</section>
+{% endblock %}
