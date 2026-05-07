@@ -10,6 +10,7 @@ from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.exporters import build_mau15_xlsx, build_mau15a_xlsx, build_mau16_xlsx
 from app.models import (
     BcctRecord,
     BomEdge,
@@ -533,8 +534,38 @@ def methodology(slug: str, request: Request, db: Session = Depends(get_db)):
 
 @router.get("/download/{key}")
 def download(slug: str, key: str, db: Session = Depends(get_db)):
-    """Download whitelist files. Path-traversal safe."""
-    get_company_or_404(db, slug)
+    """Download:
+    - mau15 / mau15a / mau16: build dynamic Excel chuẩn TT 39/2018
+    - dossier: serve static xlsx có sẵn
+    """
+    from fastapi.responses import StreamingResponse
+    c = get_company_or_404(db, slug)
+
+    if key in ("mau15", "mau15a", "mau16"):
+        if key == "mau15":
+            rows = db.scalars(
+                select(Mau15Row).where(Mau15Row.company_id == c.id).order_by(Mau15Row.id)
+            ).all()
+            buf = build_mau15_xlsx(c, rows)
+            filename = f"Mau_15_NVL_{c.slug}.xlsx"
+        elif key == "mau15a":
+            rows = db.scalars(
+                select(Mau15aRow).where(Mau15aRow.company_id == c.id).order_by(Mau15aRow.id)
+            ).all()
+            buf = build_mau15a_xlsx(c, rows)
+            filename = f"Mau_15a_SP_{c.slug}.xlsx"
+        else:
+            rows = db.scalars(
+                select(Mau16Row).where(Mau16Row.company_id == c.id)
+                .order_by(Mau16Row.tp_code, desc(Mau16Row.norm))
+            ).all()
+            buf = build_mau16_xlsx(c, rows)
+            filename = f"Mau_16_DMTT_{c.slug}.xlsx"
+        return StreamingResponse(
+            buf, media_type=XLSX_MIME,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
     info = EXPORT_FILES.get(key)
     if not info:
         raise HTTPException(404, f"Unknown download key: {key}")
@@ -676,18 +707,13 @@ RULE_FILES = [
 CONFIGS_DIR = Path(__file__).resolve().parent.parent.parent / "configs"
 EXPORTS_DIR = Path(__file__).resolve().parent.parent.parent / "exports"
 
-# Whitelist files có thể download — tránh path traversal
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+# Whitelist static files (chỉ hồ sơ giải trình hiện đang sạch). Mẫu 15/15a/16
+# build dynamic qua exporters (không serve CSV cũ).
 EXPORT_FILES = {
-    "mau15": {"file": "Mau_15_NVL_v12.0.csv", "label": "Mẫu 15 — NVL nhập-xuất-tồn", "mime": "text/csv"},
-    "mau15a": {"file": "Mau_15a_SP_v12.0.csv", "label": "Mẫu 15a — TP xuất khẩu nhập-xuất-tồn", "mime": "text/csv"},
-    "mau16": {"file": "Mau_16_DMTT_v12.0.csv", "label": "Mẫu 16 — Định mức thực tế", "mime": "text/csv"},
     "dossier": {"file": "HO_SO_GIAI_TRINH_v12.0.xlsx", "label": "Hồ sơ giải trình (12 sheet)",
-                "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-    "phase1_pdf": {"file": "BAO_CAO_PHASE_1.pdf", "label": "Báo cáo Phase 1 — Chuẩn hoá", "mime": "application/pdf"},
-    "phase2_pdf": {"file": "BAO_CAO_PHASE_2.pdf", "label": "Báo cáo Phase 2 — Bổ sung", "mime": "application/pdf"},
-    "phase3_pdf": {"file": "BAO_CAO_PHASE_3.pdf", "label": "Báo cáo Phase 3 — Audit", "mime": "application/pdf"},
-    "phase4_pdf": {"file": "BAO_CAO_PHASE_4.pdf", "label": "Báo cáo Phase 4 — Điều tra", "mime": "application/pdf"},
-    "phase5_pdf": {"file": "BAO_CAO_PHASE_5_V4.pdf", "label": "Báo cáo Phase 5 — Mẫu QT", "mime": "application/pdf"},
+                "mime": XLSX_MIME},
 }
 
 

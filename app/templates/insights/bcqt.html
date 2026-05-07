@@ -37,7 +37,7 @@
                     </div>
                 </div>
                 <div class="row" style="margin-top: 12px; gap: 6px; flex-wrap: wrap;">
-                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau15">⬇ Tải CSV</a>
+                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau15">⬇ Tải Excel chuẩn</a>
                     <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/5?form=m15">Xem trên web</a>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="row" style="margin-top: 12px; gap: 6px; flex-wrap: wrap;">
-                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau15a">⬇ Tải CSV</a>
+                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau15a">⬇ Tải Excel chuẩn</a>
                     <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/5?form=m15a">Xem trên web</a>
                 </div>
             </div>
@@ -78,7 +78,7 @@
                     </div>
                 </div>
                 <div class="row" style="margin-top: 12px; gap: 6px; flex-wrap: wrap;">
-                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau16">⬇ Tải CSV</a>
+                    <a class="btn btn-sm btn-primary" href="/c/{{ company.slug }}/download/mau16">⬇ Tải Excel chuẩn</a>
                     <a class="btn btn-sm" href="/c/{{ company.slug }}/phase/5?form=m16">Xem trên web</a>
                 </div>
             </div>
@@ -87,25 +87,15 @@
 </section>
 
 <section class="section">
-    <div class="section-head">
-        <h2>Báo cáo từng phase (PDF)</h2>
-        <div class="meta">Tài liệu giải trình cho từng giai đoạn pipeline — kèm hình ảnh, bảng số liệu, các quyết định nghiệp vụ.</div>
-    </div>
-    <div class="grid-3">
-        {% for k in ["phase1_pdf", "phase2_pdf", "phase3_pdf", "phase4_pdf", "phase5_pdf"] %}
-        {% set info = exports[k] %}
-        <a class="panel pdf-card" href="/c/{{ company.slug }}/download/{{ k }}">
-            <div class="panel-body">
-                <div class="row" style="gap: 10px;">
-                    <span class="pdf-icon">PDF</span>
-                    <div style="flex: 1; min-width: 0;">
-                        <div class="small" style="font-weight: 600;">{{ info.label }}</div>
-                        <div class="tiny muted mono">{{ info.file }}</div>
-                    </div>
-                </div>
-            </div>
-        </a>
-        {% endfor %}
+    <div class="panel">
+        <div class="panel-body">
+            <p class="small muted">
+                Mỗi mẫu được sinh trực tiếp từ dữ liệu pipeline khi tải, đảm bảo định dạng đúng chuẩn
+                {{ legal_ref("PL II Mẫu 16") }} và {{ legal_ref("PL V Mẫu 15/15a") }}: header công ty, kỳ báo cáo,
+                cột (1)-(N) đánh số đúng phụ lục, font Times New Roman.
+                Cán bộ hải quan có thể mở trực tiếp trên Excel để kiểm tra hoặc in nộp.
+            </p>
+        </div>
     </div>
 </section>
 {% endblock %}
