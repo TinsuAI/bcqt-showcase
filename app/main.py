@@ -24,6 +24,14 @@ async def lifespan(_app: FastAPI):
     yield
 
 
+# Cache-bust version for static assets — derived from CSS mtime so it changes on every deploy.
+def _asset_version() -> str:
+    try:
+        return str(int((STATIC_DIR / "css" / "style.css").stat().st_mtime))
+    except Exception:
+        return "0"
+
+
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -36,6 +44,7 @@ templates.env.filters["vi_status"] = vi_status
 templates.env.filters["vi_severity"] = vi_severity
 templates.env.filters["vi_direction"] = vi_direction
 templates.env.globals["LEGAL"] = LEGAL_EXCERPTS
+templates.env.globals["ASSET_VER"] = _asset_version()
 
 
 def render(request: Request, tpl: str, **ctx) -> HTMLResponse:
