@@ -1,12 +1,12 @@
 # Known Issues from 2025 Settlement — for Q1 2026 Audit Differential
 #
 # 3 trạng thái:
-#   resolved        — đã apply fix trong config/code hoặc Johnson đã trả lời
+#   resolved        — đã apply fix trong config/code hoặc doanh nghiệp đã trả lời
 #   pending         — chưa resolve, cần monitor regression
 #   noise_confirmed — đã investigate và kết luận không phải lỗi, auto-dismiss
 #
 # Sources: Phase 3 audit, Phase 4.1-4.4 investigation, T02 feedback,
-# PHAN_HOI_JOHNSON_Q4_Q5, js-final-round, QUYET_DINH_PHASE5, v11.3/v12.0 sessions
+# PHAN_HOI_Q4_Q5, js-final-round, QUYET_DINH_PHASE5, v11.3/v12.0 sessions
 
 resolved:
   uom_conversions:
@@ -25,7 +25,7 @@ resolved:
     evidence: "243/268 mã SAP net khớp HQ import khi include 122/123"
 
   nvl_no_e11_q4_answer:
-    source: "PHAN_HOI_JOHNSON_Q4_Q5.md"
+    source: "PHAN_HOI_Q4_Q5.md"
     question_id: Q4
     count: 157
     breakdown:
@@ -35,13 +35,13 @@ resolved:
     decision: "112 reclass → BTP_SX (Layer 3 in settlement_overrides), 43 chờ HQ khai bổ sung"
 
   e11_e13_dual_q2_answer:
-    source: "PHAN_HOI_JOHNSON_Q4_Q5.md"
+    source: "PHAN_HOI_Q4_Q5.md"
     question_id: Q2
     count: 300
     decision: "Add E13 import qty to M15 nhap_trong_ky (không add vào xuat_sx, tránh double-count SAP MvT 261)"
 
   halb_on_nvl_q5_answer:
-    source: "PHAN_HOI_JOHNSON_Q4_Q5.md"
+    source: "PHAN_HOI_Q4_Q5.md"
     question_id: Q5
     count: 1781
     breakdown:
@@ -89,7 +89,7 @@ resolved:
       - { category: "Vật liệu thử khuôn",   count: 554, m15_source: HQ }
       - { category: "Không có vấn đề",      count: 243, m15_source: SAP }
       - { category: "Chưa khai báo HQ",     count: 153, m15_source: SAP }
-      - { category: "Bù sản phẩm lỗi",      count: 41,  m15_source: HQ, status: "TẠM — pending Johnson confirm" }
+      - { category: "Bù sản phẩm lỗi",      count: 41,  m15_source: HQ, status: "TẠM — pending doanh nghiệp confirm" }
       - { category: "Khai báo chưa nhập kho", count: 39, m15_source: HQ }
       - { category: "Chênh lệch số lượng",  count: 10,  m15_source: SAP }
       - { category: "Thiếu giấy tờ",        count: 5,   m15_source: HQ }
@@ -120,7 +120,7 @@ pending:
     source: "T02-Feedback group 'Bù sản phẩm lỗi'"
     count: 41
     current: "Tạm dùng HQ làm nguồn nhập M15"
-    pending: "Johnson chưa confirm có đúng logic này không"
+    pending: "doanh nghiệp chưa confirm có đúng logic này không"
 
   bom_cycles:
     source: "Phase 5.6 cycle solver"
@@ -173,7 +173,7 @@ pending:
     sap_unit: EA
     sap_closing_mb5b: 52
     status: "Chưa config uom_conversions — cần tỷ lệ KG/EA xác nhận (~90.7 KG/EA?)"
-    pending: "Hỏi Johnson confirm tỷ lệ quy đổi"
+    pending: "Hỏi doanh nghiệp confirm tỷ lệ quy đổi"
 
   k40000041_negative_ton:
     material: K40000041
@@ -194,15 +194,15 @@ pending:
     pending: "Giải quyết sau, không critical cho BCQT 2025"
 
   q7_hs_codes:
-    status: "Chưa gửi Johnson"
+    status: "Chưa gửi doanh nghiệp"
     topic: "HS code không nhất quán giữa các tờ khai cùng mã"
 
   q8_negative_stock:
-    status: "Chưa gửi Johnson"
+    status: "Chưa gửi doanh nghiệp"
     topic: "Mã tồn kho âm runtime (chủ yếu timing HQ↔SAP)"
 
   q9_mvt_903:
-    status: "Chưa gửi Johnson"
+    status: "Chưa gửi doanh nghiệp"
     topic: "MvT 903 semantic — domestic delivery hay xuất SX?"
 
   v12_excluded_no_bom:

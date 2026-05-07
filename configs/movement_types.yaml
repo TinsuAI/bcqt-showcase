@@ -1,5 +1,5 @@
 # SAP Movement Type Classification
-# Nguồn: docs/GiaiThichMovement.md + xác nhận từ Johnson
+# Nguồn: docs/GiaiThichMovement.md + xác nhận từ doanh nghiệp
 #
 # Fields:
 #   direction: INBOUND | OUTBOUND | TRANSFER
@@ -154,4 +154,4 @@
   is_reversal: false
   affects_physical: true
   customs_relevant: false
-  description: "GI issue project stock (Xuất tiêu thụ tồn kho dự án) — cần Johnson xác nhận customs_relevant"
+  description: "GI issue project stock (Xuất tiêu thụ tồn kho dự án) — cần doanh nghiệp xác nhận customs_relevant"

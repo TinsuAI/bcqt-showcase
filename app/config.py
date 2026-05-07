@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     database_url: str = "sqlite:///./data/bcqt.sqlite"
     secret_key: str = "dev-only-change-me"
-    johnson_output_dir: Path = Path("/home/vp/workspace/client/Johnson/output")
+    # Default cho dev local; production override qua env SOURCE_DATA_DIR.
+    source_data_dir: Path = Path("./_source_data")
     settlement_version: str = "v12.0"
 
 

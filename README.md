@@ -31,7 +31,7 @@ app/
   routes/          Phase landing + drill-down
   templates/       Jinja2 SSR
   static/          CSS / JS / hình
-  seed/            Loader: Johnson output → DB (anonymized)
+  seed/            Loader: output pipeline thật → DB (anonymized)
 data/              SQLite file
 migrations/        Alembic
 docs/              Design notes, page wireframes
@@ -39,7 +39,7 @@ docs/              Design notes, page wireframes
 
 ## Data
 
-Demo pull số liệu thật từ pipeline Johnson (anonymized: tên công ty đổi thành "Công ty FDI A", giữ nguyên số liệu). 2 công ty mock thêm vào để minh hoạ multi-tenant.
+Demo pull số liệu thật từ pipeline thật (anonymized: tên công ty đổi thành "Công ty FDI A", giữ nguyên số liệu). 2 công ty mock thêm vào để minh hoạ multi-tenant.
 
 ## License
 Internal — Trọng Tín.

@@ -1,4 +1,4 @@
-"""Seed DB từ output Johnson, anonymized.
+"""Seed DB từ output pipeline thật, anonymized cho demo.
 
 Chạy: python -m app.seed.load_demo
 
@@ -44,7 +44,7 @@ from app.models import (
     ValidationResult,
 )
 
-OUT = settings.johnson_output_dir
+OUT = settings.source_data_dir
 VER = settings.settlement_version  # v12.0
 
 
@@ -323,7 +323,7 @@ def seed_investigations(db, company: Company) -> None:
          "41% AUTO_OK, 13% AUTO_EXCLUDE, 36% cần review, 10% manual."),
         ("4.2", "Customs-only — mã có HQ nhưng không có MB51", "done", 71,
          "71 mã null-material trong MB51, 2 mã chỉ có ở HQ.",
-         "Đa phần là lỗi nhập liệu SAP — đề xuất Johnson xác nhận."),
+         "Đa phần là lỗi nhập liệu SAP — đề xuất doanh nghiệp xác nhận."),
         ("4.3", "MvT 122 và mã loại hình B13", "done", 268,
          "MvT 122 = điều chỉnh nhập kho (KHÔNG phải trả hàng NCC). 243/268 mã SAP net khớp HQ import.",
          "sap_net_no_122 = 101+102 only. Q3 (B13) chuyển từ BLOCKING_P5 → xác nhận."),
@@ -613,7 +613,7 @@ def seed_phase_artifacts(db, company: Company) -> None:
         (2, "output", "Material Master phân loại", "CLEAN_MATERIAL_MASTER.xlsx", 20064, 1_700_000, "5 phân loại NVL/BTP/TP/CCDC"),
         (2, "output", "MB5B đã enrich (master meta)", "ENRICHED_MB5B.xlsx", 20064, 1_900_000, "100% match"),
         (2, "output", "MB51 đã enrich", "ENRICHED_MB51.xlsx", 243421, 71_000_000, "74 row null-material"),
-        (2, "output", "Báo cáo mâu thuẫn phân loại", "PHAN_LOAI_MAU_THUAN_JOHNSON.xlsx", 2100, 30_000, "cần khách xác nhận"),
+        (2, "output", "Báo cáo mâu thuẫn phân loại", "PHAN_LOAI_MAU_THUAN.xlsx", 2100, 30_000, "cần khách xác nhận"),
         # Phase 3
         (3, "input", "ENRICHED_MB51 + ENRICHED_MB5B + CLEAN_BCCT", "(từ Phase 2)", 0, 0, None),
         (3, "output", "Audit Phase 3 — 13 test", "AUDIT_PHASE3.xlsx", 18800, 790_000, "T01-T13"),
@@ -654,7 +654,7 @@ def seed_phase_artifacts(db, company: Company) -> None:
 
 
 def seed_pipeline_runs(db, company: Company) -> None:
-    """Lịch sử chạy pipeline — 8 lần thật từ session note Johnson."""
+    """Lịch sử chạy pipeline — 8 lần thật từ session note doanh nghiệp."""
     # Durations realistic: full P1-P6 trên 243K rows MB51 + 20K mã + 42K M16 mất 25-45 phút.
     # P5-only (BOM flatten + cycle solver) 15-25 phút. Excel I/O nặng.
     runs = [
@@ -720,7 +720,7 @@ def seed_nvl_traceability(db, company: Company) -> None:
 
 
 def seed_risks(db, company: Company) -> None:
-    """Top rủi ro nghiệp vụ — pain point bán hàng. Số liệu từ pipeline thật của Johnson."""
+    """Top rủi ro nghiệp vụ — pain point bán hàng. Số liệu từ pipeline thật của doanh nghiệp."""
     risks = [
         {
             "code": "R01",
@@ -833,7 +833,7 @@ def seed_risks(db, company: Company) -> None:
                 "bộ báo cáo phải làm lại từ Phase 5."
             ),
             "resolution": (
-                "Đã gửi danh sách câu hỏi cho khách qua doc CAU_HOI_CHO_JOHNSON.pdf. "
+                "Đã gửi danh sách câu hỏi cho khách qua doc CAU_HOI_CHO_KHACH.pdf. "
                 "Đợi phản hồi rồi áp rule vào pipeline run kế tiếp."
             ),
             "regulation_ref": None,
@@ -917,8 +917,8 @@ def seed_process_logs(db, company: Company) -> None:
          "Áp tất cả T02/UOM rule, dual-source FIFO, source_config. M15=4.773, M15a=517, M16=42.676 (517 TP). 9/9 validation PASS."),
         (date(2026, 3, 30), "Lê Minh Tuấn", "PTDL", 6, "Validate cuối — 9/9 PASS",
          "M15 nhập = HQ import (diff 0,0%). M15a XK = E42 (diff 0,1%). M16 ⊆ M15. Mass conservation ✓. Cycle ρ(C) < 1 ✓. CCDC scope ✓."),
-        (date(2026, 4, 19), "Đỗ Thị Mai", "BA", None, "Tổng hợp 9 câu hỏi blocking gửi Johnson",
-         "Q1-Q5 BLOCKING_P5, Q6-Q8 BLOCKING_SUBMISSION, Q9 NON_BLOCKING. Đợi phản hồi từ phòng kế toán Johnson."),
+        (date(2026, 4, 19), "Đỗ Thị Mai", "BA", None, "Tổng hợp 9 câu hỏi blocking gửi doanh nghiệp",
+         "Q1-Q5 BLOCKING_P5, Q6-Q8 BLOCKING_SUBMISSION, Q9 NON_BLOCKING. Đợi phản hồi từ phòng kế toán doanh nghiệp."),
     ]
     for occurred, actor, role, phase_no, action, detail in logs:
         db.add(

@@ -9,7 +9,7 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/) và [Semantic Vers
 ### Added
 - Khởi tạo project: FastAPI + Jinja2 SSR + HTMX + ECharts + SQLAlchemy + SQLite.
 - 12 bảng DB cho 6-phase BCQT pipeline (multi-tenant).
-- Seed loader pull data anonymized từ Johnson v12.0.
+- Seed loader pull data anonymized từ pipeline v12.0.
 - Trang công ty + 6 phase pages (P1 Clean → P6 Validate) + cycle visualizer.
 - Trang truy vết NVL (`/c/{slug}/trace`) — vòng đời 1 mã.
 - Trang phát hiện rủi ro (`/c/{slug}/risks`) — 7 risk pain → solution.

@@ -1,6 +1,6 @@
 # Settlement Override Configuration
 # Used by generate_settlement.py Phase 5
-# Source: Johnson feedback 19-20/03/2026
+# Source: doanh nghiệp feedback 19-20/03/2026
 
 # --- Material reclassification overrides ---
 # Applied AFTER baseline ENRICHED classification
@@ -21,8 +21,8 @@ reclassification:
   # Loaded dynamically from PHAN_LOAI
 
 # --- T02 treatment rules ---
-# Maps Johnson's "Phân loại" categories to import qty source
-# Johnson final round (2026-03-28): TẤT CẢ → HQ
+# Maps doanh nghiệp's "Phân loại" categories to import qty source
+# doanh nghiệp final round (2026-03-28): TẤT CẢ → HQ
 t02_rules:
   # Category → {source: HQ, flag: optional note}
   "vật liệu thử khuôn.":
