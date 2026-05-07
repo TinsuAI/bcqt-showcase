@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
     <script src="{{ url_for('static', path='js/app.js') }}?v={{ ASSET_VER }}" defer></script>
 </head>
-<body data-theme="dark">
+<body data-theme="light">
 {% set p = request.url.path %}
 {% set in_company = p.startswith("/c/") %}
 {% set slug = p.split("/")[2] if in_company else None %}

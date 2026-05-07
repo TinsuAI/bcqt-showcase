@@ -1,7 +1,7 @@
 // Dark/light theme toggle, persisted to localStorage.
 (() => {
     const KEY = "bcqt-theme";
-    const initial = localStorage.getItem(KEY) || "dark";
+    const initial = localStorage.getItem(KEY) || "light";
     document.body.dataset.theme = initial;
     window.addEventListener("DOMContentLoaded", () => {
         const btn = document.getElementById("theme-toggle");
