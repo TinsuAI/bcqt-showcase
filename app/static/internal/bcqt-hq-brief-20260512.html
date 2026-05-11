@@ -379,6 +379,114 @@
       line-height: 1.58;
     }
 
+    .detail-table {
+      width: 100%;
+      margin-top: 34px;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .detail-table th,
+    .detail-table td {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .detail-table th {
+      color: var(--accent-dark);
+      background: var(--surface-soft);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .detail-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .mono {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.92em;
+      color: var(--accent-dark);
+    }
+
+    .formula {
+      display: block;
+      margin-top: 8px;
+      padding: 12px 14px;
+      color: #102420;
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .demo-steps {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .demo-step {
+      background: var(--surface);
+      padding: clamp(20px, 2.5vw, 30px);
+      min-height: 270px;
+    }
+
+    .demo-step .time {
+      display: inline-flex;
+      margin-bottom: 18px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+    }
+
+    .demo-step p {
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .question-bank {
+      columns: 2;
+      column-gap: 42px;
+      margin-top: 28px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .question-bank li {
+      break-inside: avoid;
+      margin: 0 0 14px;
+      padding: 14px 0 14px 20px;
+      border-top: 1px solid var(--line);
+      color: #273733;
+      font-size: 15px;
+      line-height: 1.58;
+      position: relative;
+    }
+
+    .question-bank li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 22px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
     .proof {
       display: grid;
       grid-template-columns: 1.05fr 0.95fr;
@@ -660,6 +768,10 @@
         grid-template-columns: 1fr;
       }
 
+      .demo-steps {
+        grid-template-columns: 1fr;
+      }
+
       .matrix-row {
         grid-template-columns: 1fr;
         gap: 8px;
@@ -672,6 +784,10 @@
 
       .data-plane {
         min-height: 430px;
+      }
+
+      .question-bank {
+        columns: 1;
       }
     }
 
@@ -752,7 +868,10 @@
       <a href="#bcqt">BCQT là gì</a>
       <a href="#johnson">Case Johnson</a>
       <a href="#hq-framing">Framing HQ</a>
+      <a href="#hq-data">Dữ liệu HQ</a>
+      <a href="#control-tests">Bài kiểm</a>
       <a href="#hq-tools">Tool đề xuất</a>
+      <a href="#demo-flow">Demo 12 phút</a>
       <a href="#talk-track">Kịch bản nói</a>
       <a href="#qa">Hỏi đáp</a>
       <a href="#checklist">Checklist</a>
@@ -883,45 +1002,178 @@
       </div>
     </section>
 
+    <section id="hq-data">
+      <div class="wrap reveal">
+        <p class="section-kicker">06 - Dữ liệu dùng được ngay phía HQ</p>
+        <h2>Cụ thể đầu vào lớp 1 là tờ khai và bộ BCQT đã nộp.</h2>
+        <p class="lead">Không cần hỏi đến SAP ở bước đầu. Chỉ cần chuẩn hóa dữ liệu HQ và đọc được Mẫu 15/15a/16 là đã có thể chạy nhiều bài kiểm tra rủi ro.</p>
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Nguồn</th>
+              <th>Trường cần lấy</th>
+              <th>Dùng để kiểm gì</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Tờ khai nhập</strong><br><span class="mono">E11, E15, G12, G13...</span></td>
+              <td>MST doanh nghiệp, số tờ khai, ngày đăng ký, loại hình, mã hàng, mã HS, đơn vị tính, số lượng, trị giá, nước xuất xứ.</td>
+              <td>Đối chiếu tổng nhập với Mẫu 15; phát hiện mã nhập nhiều nhưng báo cáo sử dụng/tồn thấp; kiểm đơn vị tính và biến động trị giá.</td>
+            </tr>
+            <tr>
+              <td><strong>Tờ khai xuất</strong><br><span class="mono">E42, B11...</span></td>
+              <td>Số tờ khai, ngày xuất, mã thành phẩm, mã HS, đơn vị tính, số lượng xuất, trị giá xuất, doanh nghiệp nhận.</td>
+              <td>Đối chiếu Mẫu 15a; kiểm thành phẩm xuất khẩu có Mẫu 16 tương ứng; phát hiện xuất nhiều nhưng định mức thấp bất thường.</td>
+            </tr>
+            <tr>
+              <td><strong>Tờ khai máy móc</strong><br><span class="mono">E13, G22...</span></td>
+              <td>Loại hình, mô tả hàng, mã HS, số lượng, trị giá, ngày nhập/tái xuất.</td>
+              <td>Tách máy móc/thiết bị khỏi vật tư tiêu hao; cảnh báo trường hợp E13 bị dùng như nguyên liệu sản xuất.</td>
+            </tr>
+            <tr>
+              <td><strong>Mẫu 15</strong></td>
+              <td>Mã NVL, tên hàng, đơn vị tính, tồn đầu, nhập trong kỳ, xuất sản xuất, xuất khác, tồn cuối.</td>
+              <td>Kiểm cân đối nhập-xuất-tồn; so nhập trong kỳ với tờ khai nhập; tìm tồn âm hoặc xuất vượt nguồn.</td>
+            </tr>
+            <tr>
+              <td><strong>Mẫu 15a</strong></td>
+              <td>Mã TP, đơn vị tính, tồn đầu, nhập kho, xuất khẩu, xuất khác, tồn cuối.</td>
+              <td>So xuất khẩu với tờ khai E42; tìm TP xuất khẩu nhưng không có định mức hoặc tồn kho bất hợp lý.</td>
+            </tr>
+            <tr>
+              <td><strong>Mẫu 16</strong></td>
+              <td>Mã TP, mã NVL, đơn vị tính, định mức thực tế, lượng TP xuất khẩu, lượng NVL phân bổ.</td>
+              <td>Kiểm mã NVL có nằm trong Mẫu 15 không; định mức có âm/0/bất thường không; NVL nhập có được giải trình qua TP xuất không.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="control-tests">
+      <div class="wrap reveal">
+        <p class="section-kicker">07 - Bài kiểm cụ thể lớp HQ-only</p>
+        <h2>Đây là các kiểm tra có thể demo như sản phẩm thật.</h2>
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Bài kiểm</th>
+              <th>Công thức đơn giản</th>
+              <th>Kết quả trả ra</th>
+              <th>Câu hỏi cho doanh nghiệp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Nhập NVL khớp Mẫu 15</strong></td>
+              <td>Tổng lượng nhập theo tờ khai nhập so với cột nhập trong kỳ trên Mẫu 15.<span class="formula">diff_pct = (M15_nhap - HQ_import) / HQ_import</span></td>
+              <td>Danh sách mã lệch theo tỷ lệ: dưới 1%, 1-5%, trên 5%, chỉ có trên HQ, chỉ có trên báo cáo.</td>
+              <td>Mã này khai nhập trên tờ khai nào nhưng không đưa vào Mẫu 15? Nếu khác đơn vị tính, tỷ lệ quy đổi là gì?</td>
+            </tr>
+            <tr>
+              <td><strong>Xuất TP khớp Mẫu 15a</strong></td>
+              <td>Tổng lượng E42/B11 so với cột xuất khẩu trên Mẫu 15a.<span class="formula">diff_qty = M15a_xuat_khau - HQ_export</span></td>
+              <td>TP xuất khẩu nhưng không có trong báo cáo; TP có báo cáo xuất nhưng không thấy tờ khai tương ứng.</td>
+              <td>Xuất khẩu lệch do timing cuối kỳ, khai bổ sung, hay mã TP nội bộ khác mã khai HQ?</td>
+            </tr>
+            <tr>
+              <td><strong>M16 có đủ cầu nối NVL-TP</strong></td>
+              <td>Mọi mã NVL trên Mẫu 16 phải có trong Mẫu 15; mọi TP trên Mẫu 16 phải có trong Mẫu 15a.<span class="formula">M16.NVL ⊆ M15.NVL và M16.TP ⊆ M15a.TP</span></td>
+              <td>Danh sách mã định mức không tìm thấy trong báo cáo nhập-xuất-tồn.</td>
+              <td>Vì sao mã này có định mức nhưng không có nhập-xuất-tồn? Có phải BTP nội bộ hoặc mã mapping khác?</td>
+            </tr>
+            <tr>
+              <td><strong>Xuất sản xuất không vượt nguồn</strong></td>
+              <td>Trên Mẫu 15, tồn đầu + nhập trong kỳ phải đủ cho xuất sản xuất + xuất khác + tồn cuối.<span class="formula">ton_dau + nhap - xuat_sx - xuat_khac - ton_cuoi ≈ 0</span></td>
+              <td>Mã tồn âm, xuất vượt nguồn, hoặc cân đối sai.</td>
+              <td>Doanh nghiệp giải trình tồn âm do nhập thiếu, sai kỳ, sai đơn vị tính hay khai nhầm mã?</td>
+            </tr>
+            <tr>
+              <td><strong>Định mức bất thường</strong></td>
+              <td>So định mức của một NVL/TP với kỳ trước hoặc với nhóm sản phẩm cùng mã HS/ngành hàng.<span class="formula">z_score = (norm - median_norm_group) / std_group</span></td>
+              <td>Top định mức cao/thấp bất thường; TP dùng quá nhiều NVL so với nhóm tương đồng.</td>
+              <td>Định mức cao do thay đổi thiết kế, hao hụt, phế liệu, hay sai mapping mã nguyên liệu?</td>
+            </tr>
+            <tr>
+              <td><strong>Loại hình có dấu hiệu sai scope</strong></td>
+              <td>Lọc E13/G22/B11 theo mã HS/mô tả giống vật tư tiêu hao hoặc xuất hiện lại trong Mẫu 15/16.</td>
+              <td>Danh sách máy móc/CCDC/vật tư tiêu hao cần phân loại lại.</td>
+              <td>Mã này là máy móc thiết bị, công cụ dụng cụ, hay vật tư tiêu hao trực tiếp cho sản xuất?</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="hq-tools">
       <div class="wrap reveal">
-        <p class="section-kicker">06 - Ý tưởng tool cho HQ</p>
-        <h2>Không cần SAP để bắt đầu tạo giá trị.</h2>
+        <p class="section-kicker">08 - Tool đề xuất cho HQ</p>
+        <h2>Đóng gói các bài kiểm thành màn hình làm việc cụ thể.</h2>
         <div class="risk-list">
           <article class="risk-item">
             <div class="risk-num">01</div>
             <div>
-              <h3>Risk Screening Dashboard</h3>
-              <p>Chấm điểm rủi ro theo doanh nghiệp/kỳ báo cáo: tổng nhập, tổng xuất, hao hụt, định mức bất thường, biến động qua kỳ, số lần điều chỉnh.</p>
+              <h3>Hồ sơ rủi ro theo doanh nghiệp</h3>
+              <p>Mỗi doanh nghiệp có một điểm rủi ro theo kỳ: lệch nhập, lệch xuất, số mã bất thường, tỷ lệ hao hụt, số mã thiếu cầu nối M16, số lần điều chỉnh báo cáo.</p>
             </div>
           </article>
           <article class="risk-item">
             <div class="risk-num">02</div>
             <div>
-              <h3>BCQT Consistency Checker</h3>
-              <p>Kiểm tra logic nội bộ Mẫu 15/15a/16: cân đối đầu kỳ - nhập - xuất - cuối kỳ, mã M16 có trong M15, TP M16 liên quan M15a.</p>
+              <h3>Bảng đối chiếu mã lệch</h3>
+              <p>Cho phép lọc theo nhóm: lệch trên 5%, chỉ có trên tờ khai, chỉ có trên BCQT, sai đơn vị tính, tồn âm, định mức 0 hoặc quá cao.</p>
             </div>
           </article>
           <article class="risk-item">
             <div class="risk-num">03</div>
             <div>
-              <h3>Customs Declaration Reconciliation</h3>
-              <p>Đối chiếu báo cáo đã nộp với tờ khai HQ: E11/E15 nhập nguyên liệu, E42 xuất thành phẩm, E13/G22/B11 có logic bất thường.</p>
+              <h3>Màn hình truy vết một mã NVL</h3>
+              <p>Nhập mã NVL, xem tổng nhập theo tờ khai, lượng báo cáo trên Mẫu 15, các TP dùng mã đó trên Mẫu 16 và lượng xuất khẩu TP liên quan.</p>
             </div>
           </article>
           <article class="risk-item">
             <div class="risk-num">04</div>
             <div>
-              <h3>Material Traceability Viewer</h3>
-              <p>Tra một mã nguyên liệu để xem tổng nhập, báo cáo sử dụng, thành phẩm liên quan trên Mẫu 16 và điểm cần giải trình.</p>
+              <h3>Màn hình câu hỏi kiểm tra</h3>
+              <p>Tự gom câu hỏi theo doanh nghiệp, theo mã, theo mức độ rủi ro; cán bộ có thể xuất thành checklist làm việc với doanh nghiệp.</p>
             </div>
           </article>
           <article class="risk-item">
             <div class="risk-num">05</div>
             <div>
-              <h3>Question Generator</h3>
-              <p>Tự sinh câu hỏi cho đoàn kiểm tra: mã nhập nhiều nhưng phân bổ thấp, đơn vị tính khác, hao hụt tăng mạnh, loại hình có dấu hiệu sai scope.</p>
+              <h3>So sánh nhiều kỳ/nhiều doanh nghiệp</h3>
+              <p>So tỷ lệ hao hụt, định mức, đơn vị tính, loại hình và trị giá giữa các kỳ hoặc giữa doanh nghiệp cùng ngành để tìm outlier.</p>
             </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="demo-flow">
+      <div class="wrap reveal">
+        <p class="section-kicker">09 - Demo 12 phút</p>
+        <h2>Mở đúng màn hình, nói đúng ý, không sa vào kỹ thuật.</h2>
+        <div class="demo-steps">
+          <article class="demo-step">
+            <span class="time">0-2 phút</span>
+            <h3>Mở tổng quan 6 phase</h3>
+            <p>Nói: đây là cách team tổ chức một hồ sơ BCQT từ dữ liệu thô đến mẫu nộp và validation. Đừng nói về code hoặc framework.</p>
+          </article>
+          <article class="demo-step">
+            <span class="time">2-5 phút</span>
+            <h3>Mở Mẫu 15/15a/16</h3>
+            <p>Nói: hệ thống không chỉ xuất Excel, mà giữ được quan hệ giữa NVL, TP, định mức và dữ liệu giải trình.</p>
+          </article>
+          <article class="demo-step">
+            <span class="time">5-8 phút</span>
+            <h3>Mở truy vết NVL</h3>
+            <p>Nói: nếu cán bộ hỏi một mã NVL đi đâu, hệ thống trả về lượng vào TP xuất, TP tồn, BTP tồn và phần cần giải trình.</p>
+          </article>
+          <article class="demo-step">
+            <span class="time">8-12 phút</span>
+            <h3>Mở rủi ro và crosscheck</h3>
+            <p>Nói: với HQ-only, màn hình này sẽ đổi nguồn sang tờ khai và báo cáo đã nộp để sàng lọc doanh nghiệp/mã cần kiểm tra trước.</p>
           </article>
         </div>
       </div>
@@ -929,16 +1181,16 @@
 
     <section id="talk-track">
       <div class="wrap reveal">
-        <p class="section-kicker">07 - Kịch bản nói</p>
+        <p class="section-kicker">10 - Kịch bản nói</p>
         <h2>Partner chỉ cần nói rõ, đúng trọng tâm và không overclaim.</h2>
         <div class="script">
           <div class="script-block">
             <h3>Bản 30 giây</h3>
-            <p>Team em đã làm một hệ thống xử lý BCQT thực tế cho doanh nghiệp chế xuất. Điểm mạnh không phải là xuất Excel, mà là kiểm soát được dòng vật tư từ dữ liệu nhập khẩu, kho, sản xuất, BOM đến Mẫu 15, 15a, 16. Với phía HQ, bọn em đề xuất hướng công cụ sàng lọc rủi ro dựa trên dữ liệu HQ và báo cáo doanh nghiệp nộp; khi cần kiểm tra sâu thì có thể nạp thêm dữ liệu doanh nghiệp cung cấp để đối chiếu.</p>
+            <p>Team em đã làm một hệ thống BCQT thực tế cho doanh nghiệp chế xuất, xử lý hơn 243 nghìn dòng biến động kho, hơn 20 nghìn mã vật tư và dữ liệu tờ khai để sinh Mẫu 15, 15a, 16. Với phía HQ, bọn em không đề xuất đối chiếu SAP ngay từ đầu. Hướng đúng là dùng tờ khai và bộ BCQT đã nộp để phát hiện mã lệch, định mức bất thường, loại hình rủi ro và tạo danh sách câu hỏi kiểm tra.</p>
           </div>
           <div class="script-block">
             <h3>Bản 2 phút</h3>
-            <p>Qua case Johnson, team em đã xử lý một bộ dữ liệu BCQT khá phức tạp: dữ liệu kho, tồn kho, tờ khai Hải quan, danh mục vật tư, BOM và lệnh sản xuất. Hệ thống đi qua 6 bước: chuẩn hóa dữ liệu, phân loại vật tư, audit chất lượng, điều tra bất thường, lập Mẫu 15/15a/16, rồi validation cuối kỳ. Với HQ, bọn em không giả định HQ có SAP. Hướng phù hợp là xây lớp kiểm soát trên dữ liệu HQ đang có và báo cáo doanh nghiệp đã nộp: kiểm tra tổng nhập, tổng xuất, định mức bất thường, loại hình bất thường, biến động giữa các kỳ và chấm điểm rủi ro để ưu tiên kiểm tra.</p>
+            <p>Qua case Johnson, team em đã xử lý một bộ dữ liệu BCQT khá phức tạp: dữ liệu kho, tồn kho, tờ khai Hải quan, danh mục vật tư, BOM và lệnh sản xuất. Hệ thống đi qua 6 bước: chuẩn hóa dữ liệu, phân loại vật tư, audit chất lượng, điều tra bất thường, lập Mẫu 15/15a/16, rồi validation cuối kỳ. Phần có thể chuyển hóa cho HQ là lớp kiểm soát rủi ro: lấy tờ khai nhập/xuất và bộ BCQT doanh nghiệp nộp, kiểm tra nhập có khớp Mẫu 15 không, xuất E42 có khớp Mẫu 15a không, Mẫu 16 có dùng mã không nằm trong Mẫu 15 không, định mức nào bất thường, E13/G22 nào có dấu hiệu sai scope. Kết quả không phải là kết luận xử phạt, mà là danh sách hồ sơ và câu hỏi cần ưu tiên kiểm tra.</p>
           </div>
         </div>
       </div>
@@ -946,7 +1198,7 @@
 
     <section>
       <div class="wrap reveal">
-        <p class="section-kicker">08 - Nên nói và không nên nói</p>
+        <p class="section-kicker">11 - Nên nói và không nên nói</p>
         <h2>Giữ câu chuyện chính xác để tạo niềm tin.</h2>
         <div class="say-grid">
           <div class="say yes">
@@ -973,28 +1225,38 @@
 
     <section id="qa">
       <div class="wrap reveal">
-        <p class="section-kicker">09 - Hỏi đáp nhanh</p>
-        <h2>Ba câu hỏi có khả năng xuất hiện.</h2>
+        <p class="section-kicker">12 - Hỏi đáp nhanh</p>
+        <h2>Câu trả lời cần có ví dụ kiểm tra cụ thể.</h2>
         <div class="script">
           <div class="script-block">
             <h3>Các anh làm được gì cho Hải quan?</h3>
-            <p>Bọn em có thể hỗ trợ xây công cụ kiểm soát rủi ro BCQT. Giai đoạn đầu dùng dữ liệu HQ đang có và báo cáo doanh nghiệp nộp để kiểm tra tính nhất quán, phát hiện bất thường và ưu tiên hồ sơ cần kiểm tra.</p>
+            <p>Bọn em có thể hỗ trợ xây công cụ kiểm soát rủi ro BCQT. Ví dụ: nạp Mẫu 15/15a/16 và tờ khai trong kỳ, hệ thống trả ra danh sách mã nhập trên tờ khai nhưng không có trên Mẫu 15, TP xuất E42 nhưng không có trên Mẫu 15a, mã NVL xuất hiện trên Mẫu 16 nhưng không có nhập-xuất-tồn, hoặc định mức cao bất thường so với kỳ trước.</p>
           </div>
           <div class="script-block">
             <h3>Không có SAP thì kiểm thế nào?</h3>
-            <p>Không có SAP vẫn kiểm được lớp rủi ro ban đầu. HQ có tờ khai, loại hình, số lượng, trị giá, mã HS, kỳ báo cáo và bộ Mẫu 15/15a/16 doanh nghiệp nộp. ERP chỉ cần ở lớp kiểm tra sâu.</p>
+            <p>Không có SAP vẫn kiểm được lớp rủi ro ban đầu. Ví dụ chỉ cần tờ khai nhập và Mẫu 15 đã kiểm được nhập trong kỳ; tờ khai E42 và Mẫu 15a đã kiểm được xuất khẩu; Mẫu 15 và Mẫu 16 đã kiểm được NVL dùng trong định mức có nằm trong báo cáo tồn kho không. ERP chỉ cần khi muốn đi sâu đến phiếu kho, lệnh sản xuất và BOM nội bộ.</p>
           </div>
           <div class="script-block">
             <h3>Khác gì Excel?</h3>
-            <p>Excel xử lý được hồ sơ đơn lẻ, nhưng khó chuẩn hóa rule, khó truy vết, khó so sánh nhiều kỳ/nhiều doanh nghiệp và khó lưu lại lịch sử quyết định. Hệ thống hóa giúp chạy kiểm tra nhất quán và mở rộng.</p>
+            <p>Excel xử lý được hồ sơ đơn lẻ. Hệ thống mạnh hơn ở chỗ chạy cùng một bộ rule cho nhiều doanh nghiệp, lưu lại lịch sử kiểm tra, so sánh nhiều kỳ, tạo risk score, và sinh danh sách câu hỏi theo mức độ ưu tiên. Ví dụ một mã lệch 20% sẽ tự được gom vào nhóm cần hỏi, kèm tờ khai và dòng báo cáo liên quan.</p>
           </div>
         </div>
+        <ul class="question-bank">
+          <li>Mã NVL A có nhập trên E11/E15 nhưng không thấy trên Mẫu 15. Doanh nghiệp khai dưới mã khác hay thiếu báo cáo?</li>
+          <li>Mã TP B xuất E42 10.000 đơn vị nhưng Mẫu 15a chỉ ghi 8.500. Lệch do timing, khai bổ sung hay mapping mã?</li>
+          <li>Mã NVL C có trong Mẫu 16 nhưng không có trong Mẫu 15. Đây là BTP nội bộ, mã thay thế hay báo cáo thiếu?</li>
+          <li>Định mức mã D tăng gấp 3 lần kỳ trước. Do thay đổi thiết kế, hao hụt, phế liệu hay sai công thức?</li>
+          <li>Mã E khai E13 nhưng xuất hiện như vật tư tiêu hao trong báo cáo. Đây là máy móc, CCDC hay nguyên liệu?</li>
+          <li>Doanh nghiệp có tỷ lệ hao hụt cao hơn nhóm cùng ngành. Có tài liệu kỹ thuật hoặc định mức hao hụt được phê duyệt không?</li>
+          <li>Một mã có đơn vị tờ khai là kg nhưng Mẫu 15 là cái. Tỷ lệ quy đổi nào được áp dụng và ai xác nhận?</li>
+          <li>Mẫu 15 cân đối không khớp ở tồn cuối. Lệch do nhập sai kỳ, xuất khác chưa khai hay tồn kho thực tế khác báo cáo?</li>
+        </ul>
       </div>
     </section>
 
     <section id="checklist">
       <div class="wrap reveal">
-        <p class="section-kicker">10 - Checklist ôn tập</p>
+        <p class="section-kicker">13 - Checklist ôn tập</p>
         <h2>Trước khi đi gặp, partner cần tự trả lời được các ý này.</h2>
         <div class="checklist">
           <div>
@@ -1003,6 +1265,7 @@
               <li>Mẫu 15, 15a, 16 khác nhau thế nào.</li>
               <li>HQ không mặc định có SAP.</li>
               <li>Johnson là bằng chứng năng lực, không phải mô hình dữ liệu HQ nguyên bản.</li>
+              <li>Ba bài kiểm cụ thể: nhập khớp Mẫu 15, xuất khớp Mẫu 15a, M16 có cầu nối về M15/M15a.</li>
             </ul>
           </div>
           <div>
@@ -1011,6 +1274,7 @@
               <li>E11/E15 thường liên quan nhập nguyên liệu.</li>
               <li>E42 liên quan xuất sản phẩm của DNCX.</li>
               <li>E13 cần cẩn trọng khi lẫn với vật tư tiêu hao.</li>
+              <li>Chênh lệch cần phân nhóm: lệch số lượng, sai đơn vị, lệch kỳ, mã generic, sai scope.</li>
             </ul>
           </div>
           <div>
@@ -1019,7 +1283,37 @@
               <li>Không cần giải thích thuật toán nếu không được hỏi.</li>
               <li>Không cần nói tên file code.</li>
               <li>Không tranh luận pháp lý chi tiết khi chưa chắc.</li>
+              <li>Không demo quá lâu phần đồ thị BOM nếu cán bộ chỉ hỏi kiểm soát HQ-only.</li>
             </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap reveal">
+        <p class="section-kicker">14 - Đề xuất pilot nếu họ quan tâm</p>
+        <h2>Nói thành một gói thử nghiệm nhỏ, có đầu vào và đầu ra rõ.</h2>
+        <div class="matrix">
+          <div class="matrix-row">
+            <strong>Phạm vi</strong>
+            <p>Chọn 3-5 bộ hồ sơ BCQT đã nộp trong cùng một chi cục hoặc cùng nhóm doanh nghiệp chế xuất.</p>
+            <p>Không cần dữ liệu SAP ở giai đoạn này; chỉ dùng tờ khai và Mẫu 15/15a/16.</p>
+          </div>
+          <div class="matrix-row">
+            <strong>Đầu vào</strong>
+            <p>Dữ liệu tờ khai nhập/xuất trong kỳ, bộ báo cáo BCQT doanh nghiệp nộp, danh mục loại hình, mã HS, đơn vị tính.</p>
+            <p>Nếu có lịch sử kỳ trước thì thêm để so biến động; nếu không có vẫn chạy được kiểm tra trong kỳ.</p>
+          </div>
+          <div class="matrix-row">
+            <strong>Đầu ra</strong>
+            <p>Một dashboard rủi ro, bảng mã lệch, bảng định mức bất thường, danh sách loại hình cần xem lại.</p>
+            <p>Một file câu hỏi kiểm tra cho từng doanh nghiệp, ưu tiên theo mức độ rủi ro.</p>
+          </div>
+          <div class="matrix-row">
+            <strong>Thời gian</strong>
+            <p>Tuần 1: chuẩn hóa input, mapping cột, chạy 6 bài kiểm cơ bản.</p>
+            <p>Tuần 2: review kết quả với cán bộ, chỉnh rule, chốt mẫu dashboard và checklist câu hỏi.</p>
           </div>
         </div>
       </div>
@@ -1028,8 +1322,8 @@
     <section class="final">
       <div class="wrap reveal">
         <p class="section-kicker">Chốt buổi gặp</p>
-        <h2>Hệ thống không thay cán bộ. Hệ thống giúp cán bộ thấy rủi ro sớm hơn.</h2>
-        <p class="lead">Team có năng lực xây hệ thống kiểm soát dòng vật tư, đối chiếu dữ liệu Hải quan với báo cáo doanh nghiệp, phát hiện rủi ro và hỗ trợ kiểm tra sâu khi có thêm dữ liệu doanh nghiệp cung cấp.</p>
+        <h2>Đề xuất không phải là “xin dữ liệu SAP”. Đề xuất là chạy thử risk screening trên dữ liệu HQ đang có.</h2>
+        <p class="lead">Câu chốt nên là: cho team một vài bộ tờ khai và BCQT đã nộp, team dựng thử dashboard rủi ro, bảng mã lệch và checklist câu hỏi. Nếu kết quả hữu ích, giai đoạn sau mới bàn đến kiểm tra sâu với dữ liệu doanh nghiệp cung cấp.</p>
       </div>
     </section>
   </main>
